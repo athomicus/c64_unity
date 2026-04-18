@@ -1,0 +1,59 @@
+// cyfry_hud.h
+#ifndef CYFRY_HUD_H
+#define CYFRY_HUD_H
+
+// 10 cyfr 0-9, kazda = 8B pikseli + 1B kolor (bialy na czarnym = 0x10)
+static const unsigned char c64_digit[10][9] = {
+    { 0x3C,0x66,0x6E,0x76,0x66,0x66,0x3C,0x00, 0x10 },  /* 0 */
+    { 0x18,0x38,0x18,0x18,0x18,0x18,0x7E,0x00, 0x10 },  /* 1 */
+    { 0x3C,0x66,0x06,0x0C,0x18,0x30,0x7E,0x00, 0x10 },  /* 2 */
+    { 0x3C,0x66,0x06,0x1C,0x06,0x66,0x3C,0x00, 0x10 },  /* 3 */
+    { 0x0C,0x1C,0x3C,0x6C,0x7E,0x0C,0x0C,0x00, 0x10 },  /* 4 */
+    { 0x7E,0x60,0x7C,0x06,0x06,0x66,0x3C,0x00, 0x10 },  /* 5 */
+    { 0x1C,0x30,0x60,0x7C,0x66,0x66,0x3C,0x00, 0x10 },  /* 6 */
+    { 0x7E,0x06,0x0C,0x18,0x18,0x18,0x18,0x00, 0x10 },  /* 7 */
+    { 0x3C,0x66,0x66,0x3C,0x66,0x66,0x3C,0x00, 0x10 },  /* 8 */
+    { 0x3C,0x66,0x66,0x3E,0x06,0x0C,0x38,0x00, 0x10 }   /* 9 */
+};
+
+void DrawNumber(unsigned int num, unsigned char cx, unsigned char cy,
+                unsigned char fg, unsigned char bg)
+{
+    unsigned char digits[5];
+    unsigned char count;
+    unsigned char d;
+    unsigned char row;
+    unsigned char color;
+    unsigned int  cell;
+
+    /* wszystkie deklaracje na poczatku - wymog cc65 */
+    count = 0;
+    color = (fg << 4) | (bg & 0x0F);
+
+    /* rozloz liczbe na cyfry */
+    if (num == 0) {
+        digits[0] = 0;
+        count = 1;
+    } else {
+        while (num > 0 && count < 5) {
+            digits[count] = num % 10;
+            num /= 10;
+            count++;
+        }
+    }
+
+    /* rysuj od lewej (cyfry sa w odwrotnej kolejnosci) */
+    while (count > 0) {
+        count--;
+        d    = digits[count];
+        cell = (unsigned int)cy * 40 + cx;
+        cx++;
+
+        for (row = 0; row < 8; row++)
+            *((unsigned char*)0x6000 + cell * 8 + row) = c64_digit[d][row];
+
+        *((unsigned char*)0x4400 + cell) = color;
+    }
+}
+
+#endif

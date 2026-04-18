@@ -4,15 +4,12 @@
 #include <string.h>
 
 void BITMAP(const unsigned char* data) {
-    // VIC bank 1: $4000-$7FFF
     *((unsigned char*)0xDD00) = (*((unsigned char*)0xDD00) & 0xFC) | 0x02;
-    // bitmap @ $6000 (offset $2000 w banku 1)
-    // screen @ $4400 (offset $0400 w banku 1)
     memcpy((unsigned char*)0x6000, data,        8000);
     memcpy((unsigned char*)0x4400, data + 8000, 1000);
-    VIC.ctrl1 |= 0x20;    // hires bitmap ON
-    VIC.ctrl2 &= ~0x10;   // nie multicolor
-    VIC.addr   = 0x18;    // screen@offset$0400, bitmap@offset$2000
+    VIC.ctrl1 |= 0x20;
+    VIC.ctrl2 &= ~0x10;
+    VIC.addr   = 0x18;
 }
 
 void BITMAP_OFF(void) {
@@ -21,13 +18,106 @@ void BITMAP_OFF(void) {
     VIC.addr   = 0x15;
 }
 
-void BITMAP_COLOR(unsigned char foreground, unsigned char background)
-{
+void BITMAP_COLOR(unsigned char foreground, unsigned char background) {
     unsigned int i;
     unsigned char colorByte = (foreground << 4) | (background & 0x0F);
     unsigned char *colorRam = (unsigned char*)0x4400;
     for (i = 0; i < 1000; i++)
         colorRam[i] = colorByte;
+}
+
+void BITMAP_TILE(const unsigned char* data,
+                 unsigned char src_cx,  unsigned char src_cy,
+                 unsigned char dest_cx, unsigned char dest_cy,
+                 unsigned char cells_w, unsigned char cells_h)
+{
+    unsigned char cx, cy;
+    unsigned int src_cell;
+    unsigned int dest_cell;
+
+    for (cy = 0; cy < cells_h; cy++) {
+        if (dest_cy + cy >= 25) break;
+        if (src_cy  + cy >= 25) break;
+        for (cx = 0; cx < cells_w; cx++) {
+            if (dest_cx + cx >= 40) break;
+            if (src_cx  + cx >= 40) break;
+            src_cell  = (unsigned int)(src_cy  + cy) * 40 + (src_cx  + cx);
+            dest_cell = (unsigned int)(dest_cy + cy) * 40 + (dest_cx + cx);
+            memcpy((unsigned char*)0x6000 + dest_cell * 8,
+                   data + src_cell * 8, 8);
+            *((unsigned char*)0x4400 + dest_cell) = *(data + 8000 + src_cell);
+        }
+    }
+}
+
+// ============================================================
+//  DRAW_TILE(data, dest_cx, dest_cy, cells_w, cells_h, fg, bg)
+//
+//  Rysuje maly kafel na ekranie z mozliwoscia nadpisania kolorow.
+//
+//  data     = tablica kafla z konwertera (piksele + kolory)
+//  dest_cx  = kolumna docelowa (0-39, w komorkach 8px)
+//  dest_cy  = wiersz docelowy  (0-24, w komorkach 8px)
+//  cells_w  = szerokosc kafla w komorkach
+//  cells_h  = wysokosc kafla w komorkach
+//  fg       = kolor pikseli zapalonych (0-15), lub TILE_COLOR_AUTO
+//  bg       = kolor pikseli zgaszonych (0-15), lub TILE_COLOR_AUTO
+//
+//  Jezeli fg lub bg = TILE_COLOR_AUTO (255)
+//  -> uzywa oryginalnych kolorow z danych kafla
+//
+//  Przyklady:
+//    DRAW_TILE(grass, 4, 3, 4, 4, TILE_COLOR_AUTO, TILE_COLOR_AUTO); // oryginalne kolory
+//    DRAW_TILE(grass, 4, 3, 4, 4, 5, 0);   // zielony na czarnym
+//    DRAW_TILE(sand,  8, 3, 4, 4, 7, 9);   // zolty na brazowym
+//    DRAW_TILE(rock,  12,3, 4, 4, 11, 0);  // ciemnoszary na czarnym
+// ============================================================
+void DRAW_TILE(const unsigned char* data,
+               unsigned char dest_cx, unsigned char dest_cy,
+               unsigned char cells_w, unsigned char cells_h,
+               unsigned char fg,      unsigned char bg)
+{
+    unsigned char cx, cy;
+    unsigned char orig_color;
+    unsigned char final_color;
+    unsigned int  color_offset;
+    unsigned int  tile_cell;
+    unsigned int  dest_cell;
+
+    color_offset = (unsigned int)cells_w * cells_h * 8;
+
+    for (cy = 0; cy < cells_h; cy++) {
+        if (dest_cy + cy >= 25) break;
+        for (cx = 0; cx < cells_w; cx++) {
+            if (dest_cx + cx >= 40) break;
+
+            tile_cell = (unsigned int)cy * cells_w + cx;
+            dest_cell = (unsigned int)(dest_cy + cy) * 40 + (dest_cx + cx);
+
+            // Kopiuj 8 bajtow pikseli
+            memcpy((unsigned char*)0x6000 + dest_cell * 8,
+                   data + tile_cell * 8, 8);
+
+            // Ustal kolor komorki
+            orig_color = *(data + color_offset + tile_cell);
+
+            if (fg == TILE_COLOR_AUTO && bg == TILE_COLOR_AUTO) {
+                // Oba AUTO -> uzyj oryginalnych z danych kafla
+                final_color = orig_color;
+            } else if (fg == TILE_COLOR_AUTO) {
+                // Tylko fg z oryginalu, bg z parametru
+                final_color = (orig_color & 0xF0) | (bg & 0x0F);
+            } else if (bg == TILE_COLOR_AUTO) {
+                // Tylko bg z oryginalu, fg z parametru
+                final_color = (fg << 4) | (orig_color & 0x0F);
+            } else {
+                // Oba podane recznie
+                final_color = (fg << 4) | (bg & 0x0F);
+            }
+
+            *((unsigned char*)0x4400 + dest_cell) = final_color;
+        }
+    }
 }
 
 
