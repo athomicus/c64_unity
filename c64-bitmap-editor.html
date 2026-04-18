@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C64 Bitmap Editor</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="light"]{
+  --bg:#f7f6f2;--surf:#f9f8f5;--surfoff:#f3f0ec;--border:#d4d1ca;--div:#dcd9d5;
+  --text:#28251d;--muted:#7a7974;--faint:#bab9b4;
+  --primary:#01696f;--primhov:#0c4e54;--primhl:#cedcd8;
+  --success:#437a22;--error:#a12c7b;
+  --sh-sm:0 1px 2px oklch(0.2 0.01 80/0.06);
+  --sh-lg:0 12px 32px oklch(0.2 0.01 80/0.12);
+  --r-sm:0.375rem;--r-md:0.5rem;--r-lg:0.75rem;
+  --tr:180ms cubic-bezier(0.16,1,0.3,1);
+  --font:'Satoshi',system-ui,sans-serif;
+}
+[data-theme="dark"]{
+  --bg:#171614;--surf:#1c1b19;--surfoff:#1d1c1a;--border:#393836;--div:#262523;
+  --text:#cdccca;--muted:#797876;--faint:#5a5957;
+  --primary:#4f98a3;--primhov:#227f8b;--primhl:#313b3b;
+  --success:#6daa45;--error:#d163a7;
+  --sh-sm:0 1px 2px oklch(0 0 0/0.2);
+  --sh-lg:0 12px 32px oklch(0 0 0/0.4);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100dvh;font-size:1rem}
+button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:var(--r-sm)}
+.app{display:grid;grid-template-rows:56px 1fr;min-height:100dvh}
+header{display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;
+  background:var(--surf);border-bottom:1px solid var(--border);box-shadow:var(--sh-sm);
+  position:sticky;top:0;z-index:20}
+.logo{font-weight:700;font-size:1.05rem;color:var(--primary)}
+.badge{font-size:0.66rem;font-weight:700;padding:0.18em 0.5em;border-radius:99px;
+  background:var(--primhl);color:var(--primary);letter-spacing:0.06em;text-transform:uppercase;margin-left:0.4rem}
+.hdr-r{display:flex;align-items:center;gap:0.6rem}
+.body{display:grid;grid-template-columns:250px 1fr;height:calc(100dvh - 56px)}
+aside{background:var(--surf);border-right:1px solid var(--border);padding:1rem;
+  display:flex;flex-direction:column;gap:0.85rem;overflow-y:auto}
+main{display:flex;flex-direction:column;align-items:center;padding:1.25rem 1.5rem;gap:1.25rem;overflow:auto}
+.lbl{font-size:0.66rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:0.28rem}
+.mode-g{display:flex;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden}
+.mbtn{flex:1;padding:0.35rem 0.2rem;font-size:0.73rem;font-weight:500;color:var(--muted);
+  transition:background var(--tr),color var(--tr);text-align:center}
+.mbtn.on{background:var(--primary);color:#fff}
+.btn{display:inline-flex;align-items:center;gap:0.3rem;padding:0.38rem 0.75rem;
+  border-radius:var(--r-md);font-size:0.8rem;font-weight:500;transition:background var(--tr),color var(--tr);white-space:nowrap}
+.btn-p{background:var(--primary);color:#fff}.btn-p:hover{background:var(--primhov)}
+.btn-g{color:var(--muted);border:1px solid var(--border)}.btn-g:hover{background:var(--surfoff);color:var(--text)}
+.btn-d{color:var(--error);border:1px solid oklch(from var(--error) l c h/0.3)}
+.btn-d:hover{background:oklch(from var(--error) l c h/0.08)}
+.btn-s{padding:0.26rem 0.55rem;font-size:0.76rem}
+.brow{display:flex;gap:0.3rem;flex-wrap:wrap}
+hr{border:none;border-top:1px solid var(--div);margin:0.1rem 0}
+.infobox{background:var(--surfoff);border-radius:var(--r-md);padding:0.55rem 0.7rem;
+  font-size:0.73rem;color:var(--muted);line-height:1.55}
+.infobox strong{color:var(--text);font-weight:600}
+.infobox code{font-family:monospace;font-size:0.85em;background:oklch(from var(--primary) l c h/0.12);
+  padding:0.1em 0.3em;border-radius:3px;color:var(--primary)}
+.palette{display:grid;grid-template-columns:repeat(8,1fr);gap:3px}
+.pc{aspect-ratio:1;border-radius:3px;cursor:pointer;border:2px solid transparent;
+  transition:border-color var(--tr),transform var(--tr)}
+.pc.ink-on{border-color:#fff;transform:scale(1.18);z-index:1;position:relative}
+.pc.paper-on{border-color:oklch(from var(--primary) l c h/0.8)}
+canvas{image-rendering:pixelated;display:block;border:2px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-lg);cursor:crosshair}
+.canvas-wrap{position:relative;display:inline-block}
+.ov{position:absolute;top:0;left:0;pointer-events:none;border-radius:var(--r-lg)}
+.cpanel{width:100%;max-width:820px}
+.cphead{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem}
+.ctabs{display:flex;gap:0.3rem;flex-wrap:wrap}
+.ctab{padding:0.28rem 0.65rem;font-size:0.76rem;font-weight:500;border-radius:var(--r-md);
+  color:var(--muted);border:1px solid var(--border);transition:background var(--tr),color var(--tr)}
+.ctab.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+pre{background:var(--surf);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:0.9rem 1.1rem;font-family:'Courier New',monospace;font-size:0.73rem;
+  line-height:1.65;overflow:auto;max-height:340px;color:var(--text);box-shadow:var(--sh-sm)}
+.kw{color:#4f98a3}.nu{color:#e8af34}.cm{color:var(--faint);font-style:italic}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--success);color:#fff;
+  padding:0.5rem 0.9rem;border-radius:var(--r-md);font-size:0.82rem;font-weight:500;
+  opacity:0;transform:translateY(8px);transition:opacity 0.2s,transform 0.2s;pointer-events:none;z-index:100}
+.toast.show{opacity:1;transform:translateY(0)}
+input[type=range]{accent-color:var(--primary);vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div style="display:flex;align-items:center">
+    <span class="logo">C64 Bitmap Editor</span>
+    <span class="badge">320x200 Hi-Res</span>
+  </div>
+  <div class="hdr-r">
+    <span id="ci" style="font-size:0.74rem;color:var(--faint);font-family:monospace">x:--- y:---</span>
+    <button class="btn btn-g btn-s" data-theme-toggle>Motyw</button>
+  </div>
+</header>
+<div class="body">
+<aside>
+  <div>
+    <div class="lbl">Narzedzie</div>
+    <div class="mode-g">
+      <button class="mbtn on" id="td" onclick="setTool('draw')">Rysuj</button>
+      <button class="mbtn" id="te" onclick="setTool('erase')">Wymazuj</button>
+      <button class="mbtn" id="tf" onclick="setTool('fill')">Wypelnij</button>
+      <button class="mbtn" id="tl" onclick="setTool('line')">Linia</button>
+    </div>
+  </div>
+  <div>
+    <div class="lbl">Paleta C64 — klik=tusz, Shift+klik=tlo</div>
+    <div class="palette" id="pal"></div>
+    <div style="display:flex;gap:0.75rem;margin-top:0.4rem;font-size:0.72rem;color:var(--muted)">
+      <span><span style="display:inline-block;width:10px;height:10px;border:2px solid #fff;border-radius:2px;vertical-align:middle"></span> Tusz (ON)</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border:2px solid var(--primary);border-radius:2px;vertical-align:middle"></span> Tlo (OFF)</span>
+    </div>
+  </div>
+  <hr>
+  <div>
+    <div class="lbl">Zoom <span id="zv" style="color:var(--text);font-weight:700">2x</span></div>
+    <input type="range" id="zr" min="1" max="4" value="2" step="0.5" style="width:100%" oninput="setZoom(+this.value)">
+  </div>
+  <div>
+    <div class="lbl">Pisak <span id="bv" style="color:var(--text);font-weight:700">1px</span></div>
+    <input type="range" id="br" min="1" max="20" value="1" style="width:100%" oninput="setBrush(+this.value)">
+  </div>
+  <hr>
+  <div>
+    <div class="lbl">Przeksztalcenia</div>
+    <div class="brow">
+      <button class="btn btn-g btn-s" onclick="mH()">Odbij H</button>
+      <button class="btn btn-g btn-s" onclick="mV()">Odbij V</button>
+      <button class="btn btn-g btn-s" onclick="doInv()">Odwroc</button>
+      <button class="btn btn-d btn-s" onclick="doClr()">Wyczysc</button>
+    </div>
+  </div>
+  <hr>
+  <div>
+    <div class="lbl">Przyklady</div>
+    <div class="brow">
+      <button class="btn btn-g btn-s" onclick="drawTree()">Drzewo</button>
+      <button class="btn btn-g btn-s" onclick="drawSky()">Niebo+Trawa</button>
+      <button class="btn btn-g btn-s" onclick="drawCheck()">Szachownica</button>
+    </div>
+  </div>
+  <div class="infobox">
+    <strong>Pamiec C64 Hi-Res:</strong><br>
+    Bitmap: <code>$2000</code> — 8000 B<br>
+    Kolory: <code>$0400</code> — 1000 B<br>
+    Komorka 8x8: hi=tusz, lo=tlo<br>
+    Piksel (x,y): byte=<code>$2000+(y/8*40+x/8)*8+y%8</code><br>
+    bit = <code>7-(x%8)</code>
+  </div>
+</aside>
+<main>
+  <div class="canvas-wrap">
+    <canvas id="c"></canvas>
+    <canvas id="ov" class="ov"></canvas>
+  </div>
+  <div class="cpanel">
+    <div class="cphead">
+      <div class="ctabs">
+        <button class="ctab on" onclick="showTab('poke')" id="tab-poke">POKE (tablica)</button>
+        <button class="ctab" onclick="showTab('setpx')" id="tab-setpx">SetPixel (funkcje)</button>
+        <button class="ctab" onclick="showTab('mem')" id="tab-mem">Format pamieci</button>
+      </div>
+      <button class="btn btn-g btn-s" onclick="doCopy()">Kopiuj</button>
+    </div>
+    <pre id="co"></pre>
+  </div>
+</main>
+</div>
+</div>
+<div class="toast" id="toast">Skopiowano!</div>
+<script>
+(function(){const t=document.querySelector('[data-theme-toggle]'),r=document.documentElement;
+let d=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';r.setAttribute('data-theme',d);
+t&&t.addEventListener('click',()=>{d=d==='dark'?'light':'dark';r.setAttribute('data-theme',d);});})();
+
+const PAL=[
+  {n:'Black',  h:'#000000'},{n:'White',  h:'#FFFFFF'},{n:'Red',    h:'#9F4E44'},
+  {n:'Cyan',   h:'#6ABFC6'},{n:'Purple', h:'#A057A3'},{n:'Green',  h:'#5CAB5E'},
+  {n:'Blue',   h:'#50459B'},{n:'Yellow', h:'#C9D487'},{n:'Orange', h:'#A1683C'},
+  {n:'Brown',  h:'#6D5412'},{n:'LtRed',  h:'#CB7E75'},{n:'DkGrey', h:'#626262'},
+  {n:'MdGrey', h:'#898989'},{n:'LtGreen',h:'#9AE29B'},{n:'LtBlue', h:'#887ECB'},
+  {n:'LtGrey', h:'#ADADAD'}
+];
+const CN=['BLACK','WHITE','RED','CYAN','PURPLE','GREEN','BLUE','YELLOW',
+          'ORANGE','BROWN','LTRED','DKGREY','MDGREY','LTGREEN','LTBLUE','LTGREY'];
+
+const W=320,H=200;
+let px=new Uint8Array(W*H);
+let ink=1,paper=6;
+let tool='draw',brush=1,zoom=2;
+let isDown=false,lineStart=null,dirty=false;
+let activeTab='poke';
+
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const ov=document.getElementById('ov'),oct=ov.getContext('2d');
+
+// Build palette
+const palDiv=document.getElementById('pal');
+PAL.forEach((c,i)=>{
+  const d=document.createElement('div');d.className='pc';
+  d.style.background=c.h;d.title=c.n+' ('+i+')';
+  if(i===ink)d.classList.add('ink-on');
+  if(i===paper)d.classList.add('paper-on');
+  d.onclick=e=>{if(e.shiftKey)setPaper(i);else setInk(i);};
+  palDiv.appendChild(d);
+});
+function setInk(i){ink=i;document.querySelectorAll('.pc').forEach((d,j)=>d.classList.toggle('ink-on',j===i));renderCode();}
+function setPaper(i){paper=i;document.querySelectorAll('.pc').forEach((d,j)=>d.classList.toggle('paper-on',j===i));renderCode();}
+
+function initCv(){
+  cv.width=W;cv.height=H;cv.style.width=(W*zoom)+'px';cv.style.height=(H*zoom)+'px';
+  ov.width=W;ov.height=H;ov.style.width=(W*zoom)+'px';ov.style.height=(H*zoom)+'px';
+  renderCv();
+}
+function hex(h,o){return parseInt(h.slice(o,o+2),16);}
+function renderCv(){
+  const img=ctx.createImageData(W,H);
+  for(let i=0;i<W*H;i++){
+    const h=PAL[px[i]].h;
+    img.data[i*4]=hex(h,1);img.data[i*4+1]=hex(h,3);img.data[i*4+2]=hex(h,5);img.data[i*4+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+}
+
+function paintDot(x,y,c){
+  const half=Math.floor(brush/2);
+  for(let dy=-half;dy<=half;dy++)for(let dx=-half;dx<=half;dx++){
+    const nx=x+dx,ny=y+dy;if(nx>=0&&nx<W&&ny>=0&&ny<H)px[ny*W+nx]=c;
+  }
+  dirty=true;
+}
+function getXY(e){const r=cv.getBoundingClientRect();return{x:Math.floor((e.clientX-r.left)/zoom),y:Math.floor((e.clientY-r.top)/zoom)};}
+
+function flood(x,y,tv,rv){
+  if(tv===rv)return;const s=[[x,y]];
+  while(s.length){const[cx,cy]=s.pop();if(cx<0||cx>=W||cy<0||cy>=H)continue;
+    const i=cy*W+cx;if(px[i]!==tv)continue;px[i]=rv;
+    s.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]);}
+}
+function drawLinePx(x0,y0,x1,y1,c){
+  let dx=Math.abs(x1-x0),dy=Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1,err=dx-dy;
+  for(;;){paintDot(x0,y0,c);if(x0===x1&&y0===y1)break;let e2=2*err;if(e2>-dy){err-=dy;x0+=sx;}if(e2<dx){err+=dx;y0+=sy;}}
+}
+
+cv.addEventListener('mousedown',e=>{
+  e.preventDefault();isDown=true;const{x,y}=getXY(e);
+  if(tool==='fill'){flood(x,y,px[y*W+x],e.button===2?paper:ink);renderCv();renderCode();return;}
+  if(tool==='line'){lineStart={x,y};return;}
+  const c=e.button===2?paper:tool==='erase'?paper:ink;paintDot(x,y,c);renderCv();
+});
+cv.addEventListener('mousemove',e=>{
+  const{x,y}=getXY(e);
+  document.getElementById('ci').textContent='x:'+String(x).padStart(3)+' y:'+String(y).padStart(3)+'  cel:('+Math.floor(x/8)+','+Math.floor(y/8)+')';
+  oct.clearRect(0,0,W,H);oct.fillStyle='rgba(255,255,255,0.2)';
+  const h=Math.floor(brush/2);oct.fillRect(x-h,y-h,brush,brush);
+  if(tool==='line'&&lineStart&&isDown){
+    oct.clearRect(0,0,W,H);oct.strokeStyle='rgba(255,255,0,0.7)';oct.lineWidth=1;
+    oct.beginPath();oct.moveTo(lineStart.x+0.5,lineStart.y+0.5);oct.lineTo(x+0.5,y+0.5);oct.stroke();return;
+  }
+  if(!isDown)return;
+  const c=e.buttons===2?paper:tool==='erase'?paper:ink;
+  if(tool!=='fill'&&tool!=='line'){paintDot(x,y,c);renderCv();}
+});
+cv.addEventListener('mouseup',e=>{
+  if(tool==='line'&&lineStart){
+    const{x,y}=getXY(e);drawLinePx(lineStart.x,lineStart.y,x,y,e.button===2?paper:ink);
+    lineStart=null;oct.clearRect(0,0,W,H);renderCv();
+  }
+  if(dirty){renderCode();dirty=false;}isDown=false;
+});
+cv.addEventListener('mouseleave',()=>{oct.clearRect(0,0,W,H);if(dirty){renderCode();dirty=false;}});
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+
+function setTool(t){
+  tool=t;lineStart=null;
+  const m={draw:'d',erase:'e',fill:'f',line:'l'};
+  Object.values(m).forEach(x=>{const el=document.getElementById('t'+x);if(el)el.classList.remove('on');});
+  if(m[t])document.getElementById('t'+m[t]).classList.add('on');
+}
+function setZoom(v){zoom=v;document.getElementById('zv').textContent=v+'x';initCv();}
+function setBrush(v){brush=v;document.getElementById('bv').textContent=v+'px';}
+function mH(){for(let y=0;y<H;y++)for(let x=0;x<W/2;x++){const a=y*W+x,b=y*W+(W-1-x);[px[a],px[b]]=[px[b],px[a]];}renderCv();renderCode();}
+function mV(){for(let y=0;y<H/2;y++)for(let x=0;x<W;x++){const a=y*W+x,b=(H-1-y)*W+x;[px[a],px[b]]=[px[b],px[a]];}renderCv();renderCode();}
+function doInv(){for(let i=0;i<px.length;i++)px[i]=px[i]===ink?paper:ink;renderCv();renderCode();}
+function doClr(){px.fill(paper);renderCv();renderCode();}
+
+function drawTree(){
+  px.fill(6);
+  for(let y=160;y<H;y++)for(let x=0;x<W;x++)px[y*W+x]=5;
+  for(let y=130;y<160;y++)for(let x=148;x<172;x++)px[y*W+x]=9;
+  function tri(cx,ty,by,hw,c){for(let y=ty;y<=by;y++){const w=Math.floor(hw*(y-ty)/(by-ty));for(let x=cx-w;x<=cx+w;x++)if(x>=0&&x<W)px[y*W+x]=c;}}
+  tri(160,100,135,60,5);tri(160,65,110,45,5);tri(160,20,75,30,13);
+  renderCv();renderCode();
+}
+function drawSky(){
+  for(let y=0;y<130;y++)for(let x=0;x<W;x++)px[y*W+x]=6;
+  for(let y=130;y<H;y++)for(let x=0;x<W;x++)px[y*W+x]=5;
+  renderCv();renderCode();
+}
+function drawCheck(){
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++)px[y*W+x]=(Math.floor(x/8)+Math.floor(y/8))%2===0?ink:paper;
+  renderCv();renderCode();
+}
+
+// Convert to C64 bitmap format
+function toC64(){
+  const bmp=new Uint8Array(8000),clr=new Uint8Array(1000);
+  for(let cy=0;cy<25;cy++)for(let cx=0;cx<40;cx++){
+    const off=(cy*40+cx)*8;
+    const cnt=new Array(16).fill(0);
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++)cnt[px[(cy*8+r)*W+(cx*8+c)]]++;
+    let c1=-1,c2=-1;
+    for(let i=0;i<16;i++){if(c1<0||cnt[i]>cnt[c1]){c2=c1;c1=i;}else if(c2<0||cnt[i]>cnt[c2])c2=i;}
+    if(c2<0)c2=0;
+    clr[cy*40+cx]=(c1<<4)|c2;
+    for(let r=0;r<8;r++){let b=0;for(let c=0;c<8;c++)if(px[(cy*8+r)*W+(cx*8+c)]===c1)b|=(1<<(7-c));bmp[off+r]=b;}
+  }
+  return{bmp,clr};
+}
+
+function h2(n){return'0x'+n.toString(16).toUpperCase().padStart(2,'0');}
+function fmtArr(arr,name,comment,per=16){
+  let s='<span class="kw">unsigned char</span> '+name+'[<span class="nu">'+arr.length+'</span>] = {\n';
+  s+='    <span class="cm">// '+comment+'</span>\n    ';
+  for(let i=0;i<arr.length;i++){s+=h2(arr[i]);if(i<arr.length-1)s+=', ';if((i+1)%per===0&&i<arr.length-1)s+='\n    ';}
+  return s+'\n};';
+}
+
+function renderCode(){
+  const{bmp,clr}=toC64();
+  let code='';
+  if(activeTab==='poke'){
+    code=`<span class="cm">// ================================================================
+// METODA POKE — bitmapa jako tablica C, ladowana przez POKE
+// Workflow: rysujesz tutaj -> kopiujesz tablice do kodu C
+// Kompiluj z: cc65 / 8bit-Unity (plik main.c)
+// ================================================================</span>
+
+<span class="cm">// 8000 bajtow danych pikseli (format komorek 8x8 VIC-II)</span>
+${fmtArr(bmp,'bitmapData','C64 hi-res bitmap: (cy*40+cx)*8 = offset komorki',16)}
+
+<span class="cm">// 1000 bajtow kolorow (jeden bajt na komorke 8x8)
+// Bits [7:4] = kolor tuszu (bit=1), Bits [3:0] = kolor tla (bit=0)</span>
+${fmtArr(clr,'colorData','Color RAM: hi-nibble=tusz, lo-nibble=tlo',20)}
+
+<span class="cm">// Wklej do main.c — laduje bitmape z tablic do pamieci C64</span>
+<span class="kw">void</span> LoadBitmapFromCode(<span class="kw">void</span>) {
+    <span class="kw">unsigned int</span> i;
+    <span class="kw">for</span> (i = <span class="nu">0</span>; i < <span class="nu">8000</span>; i++) POKE(<span class="nu">0x2000</span> + i, bitmapData[i]);
+    <span class="kw">for</span> (i = <span class="nu">0</span>; i < <span class="nu">1000</span>; i++) POKE(<span class="nu">0x0400</span> + i, colorData[i]);
+}
+
+<span class="kw">int</span> main(<span class="kw">void</span>) {
+    InitBitmap();          <span class="cm">// 8bit-Unity: wlacza bitmap mode w VIC-II</span>
+    LoadBitmapFromCode();  <span class="cm">// zaladuj nasz obraz</span>
+    <span class="kw">while</span> (<span class="nu">1</span>) {}
+    <span class="kw">return</span> <span class="nu">0</span>;
+}`;
+  } else if(activeTab==='setpx'){
+    // Build SetPixel code
+    let cmds=[];let lastC=-1;
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const c=px[y*W+x];if(c!==paper){if(c!==lastC){cmds.push({t:'c',c});lastC=c;}cmds.push({t:'p',x,y});}
+    }
+    let total=cmds.filter(c=>c.t==='p').length;
+    let lines=`<span class="cm">// METODA SetPixel — rysowanie przez funkcje 8bit-Unity
+// Wolniejsza (kazdy piksel to wywolanie funkcji), ale czytelna
+// Dla ${total} pikseli moze byc wolna — uzyj metody POKE dla tla!</span>
+
+<span class="kw">void</span> DrawBackground(<span class="kw">void</span>) {
+    inkColor = <span class="nu">${CN[paper]||paper}</span>;
+    ClearBitmap();  <span class="cm">// wypelnij caly ekran kolorem tla</span>
+`;
+    let lc=-1;
+    cmds.forEach(cmd=>{
+      if(cmd.t==='c'){lines+=`\n    inkColor = <span class="nu">${CN[cmd.c]||cmd.c}</span>;\n`;lc=cmd.c;}
+      else lines+=`    LocatePixel(<span class="nu">${cmd.x}</span>, <span class="nu">${cmd.y}</span>); SetPixel(inkColor);\n`;
+    });
+    lines+=`}\n\n<span class="cm">// Lacznie ${total} pikseli</span>`;
+    code=lines;
+  } else {
+    // Memory layout explanation
+    code=`<span class="cm">// ================================================================
+// FORMAT PAMIECI C64 HI-RES BITMAP — jak dziala?
+// ================================================================
+
+// Ekran: 320x200 pikseli = 40x25 komorek 8x8
+// 
+// BITMAP MEMORY ($2000 — 8000 bajtow):
+//   Komorka (cx, cy) zaczyna sie pod adresem:
+//     $2000 + (cy*40 + cx)*8
+//   Wiersz r komorki = adres_komorki + r
+//   Piksel (x, y):
+//     adres = $2000 + ((y/8)*40 + (x/8))*8 + (y%8)
+//     bit   = 7 - (x%8)
+//
+// COLOR MEMORY ($0400 — 1000 bajtow):
+//   Jeden bajt na komorke: $0400 + cy*40 + cx
+//   Bits [7:4] = kolor tuszu  (piksele z bitem=1)
+//   Bits [3:0] = kolor tla    (piksele z bitem=0)
+//   Np. 0x15 = tusz:niebieski(1), tlo:pom(5)
+//
+// VIC-II setup (robi za Ciebie InitBitmap()):
+//   $D011 |= 0x20   — wlacz bitmap mode
+//   $D018  = 0x18   — bitmap=$2000, screen=$0400
+//   $D016 &= ~0x10  — hires (nie multicolor)
+// ================================================================</span>
+
+<span class="cm">// Przyklady recznego pisania pod piksel (x=10, y=5):</span>
+<span class="kw">unsigned int</span> bmpAddr = <span class="nu">0x2000</span> + ((<span class="nu">5</span>/<span class="nu">8</span>)*<span class="nu">40</span> + (<span class="nu">10</span>/<span class="nu">8</span>))*<span class="nu">8</span> + (<span class="nu">5</span>%<span class="nu">8</span>);
+<span class="kw">unsigned char</span> bitMask = <span class="nu">1</span> << (<span class="nu">7</span> - (<span class="nu">10</span>%<span class="nu">8</span>));
+
+POKE(bmpAddr, PEEK(bmpAddr) | bitMask);   <span class="cm">// zapal piksel</span>
+POKE(bmpAddr, PEEK(bmpAddr) & ~bitMask);  <span class="cm">// zgasz piksel</span>
+
+<span class="cm">// Ustaw kolory dla komorki zawierajacej piksel (10,5):</span>
+<span class="kw">unsigned int</span> clrAddr = <span class="nu">0x0400</span> + (<span class="nu">5</span>/<span class="nu">8</span>)*<span class="nu">40</span> + (<span class="nu">10</span>/<span class="nu">8</span>);
+POKE(clrAddr, (<span class="nu">1</span> << <span class="nu">4</span>) | <span class="nu">6</span>);  <span class="cm">// tusz=bialy(1), tlo=niebieski(6)</span>
+
+<span class="cm">// UWAGA: w C64 HI-RES jedna komorka 8x8 = tylko 2 kolory!
+// Jezeli w komorce sa 3+ kolory, VIC-II zmiesza je nieprawidlowo.
+// Dlatego ten edytor automatycznie wybiera 2 dominujace kolory na komorke.</span>`;
+  }
+  document.getElementById('co').innerHTML=code;
+}
+
+function showTab(t){
+  activeTab=t;
+  document.querySelectorAll('.ctab').forEach(el=>el.classList.remove('on'));
+  document.getElementById('tab-'+t).classList.add('on');
+  renderCode();
+}
+
+function doCopy(){
+  navigator.clipboard.writeText(document.getElementById('co').textContent).catch(()=>{});
+  const el=document.getElementById('toast');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000);
+}
+
+// Init
+initCv();
+drawTree();
+</script>
+</body>
+</html>

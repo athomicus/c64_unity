@@ -1,0 +1,12 @@
+pip install Pillow
+python3 konwerter.py moj_obrazek.png ekran1.h
+
+
+windows:
+py -m pip install Pillow
+
+or
+
+python -m pip install Pillow
+
+python3 -m pip install Pillow
