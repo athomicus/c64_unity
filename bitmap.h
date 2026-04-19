@@ -45,4 +45,9 @@ void DRAW_TILE(const unsigned char* data,
                unsigned char cells_w, unsigned char cells_h,
                unsigned char fg,      unsigned char bg);
 
+void DRAW_TILE_FLIP_H(const unsigned char* data,
+                      unsigned char dest_cx, unsigned char dest_cy,
+                      unsigned char cells_w, unsigned char cells_h,
+                      unsigned char fg,      unsigned char bg);
+
 #endif/* BITMAP_H */
