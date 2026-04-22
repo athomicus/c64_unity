@@ -50,14 +50,32 @@ int main(void) {
 	 
    
   InitHiRes(); 
-	//BITMAP_COLOR(0,12);
-	//BITMAP(ekran1);
+	//BITMAP_COLOR(0,0);
+	BITMAP(mapa);
    
 	//320x200 ale od [x+24, y+50, x+344,y+250]
     POKE(0xD020, 0);  // ramka: czarna
     POKE(0xD021, 0);  // tlo:   czarne             
-	DRAW_TILE(ekran1, 0, 0, 20, 25, C64_GREEN, C64_BLACK);
-	DRAW_TILE_FLIP_H(ekran1, 20, 0, 20, 25, C64_GREEN, C64_BLACK);
+	DRAW_TILE(tree, 10, 10, 2, 2, C64_BLACK,C64_GREEN);
+    DRAW_TILE(tree2, 12, 10, 2, 2, C64_BLACK,C64_GREEN);
+    
+//mordor
+ DRAW_TILE(n01, 0, 20, 4, 4, 11,0);
+ DRAW_TILE(n02, 4, 20, 4, 4, 11,0 );
+ DRAW_TILE(n03, 8, 20, 4, 4, 11,0 );
+ DRAW_TILE(n04, 12, 20, 4, 4, 11,0 );
+ DRAW_TILE(n05, 16, 20, 4, 4, 11,0 );
+ DRAW_TILE(n06, 20, 20, 4, 4, 11,0 );
+ DRAW_TILE(n07, 24, 20, 4, 4, 11,0 );
+ DRAW_TILE(n08, 28, 20, 4, 4, 11,0 );
+ DRAW_TILE(n09, 32, 20, 4, 4, 11,0 );
+ DRAW_TILE(n10, 36, 20, 4, 4, 11,0 );
+
+
+//
+
+    //DRAW_TILE(ekran1, 0, 0, 20, 25, C64_GREEN, C64_BLACK);
+	//DRAW_TILE_FLIP_H(ekran1, 20, 0, 20, 25, C64_GREEN, C64_BLACK);
                    
 	//DRAW_TILE(ekran1, 20, 0, 20, 25, C64_GREEN, C64_BLACK);
 	//DRAW_TILE(teren,  0,  0,2,2, C64_GREEN, C64_BLACK);
@@ -73,7 +91,7 @@ int main(void) {
 	
 	SPRITE(0, spritePlayer,  60,  80,  1);  // bialy
     SPRITE(1, spriteEnemy, 120,  80,  2);  // czerwony
-	SPRITE(2, spriteEnemy, 50,  50,  7);  // czerwony
+	SPRITE(2, spriteOrc, 50,  50,  5);  // zielony
 
     
 DrawNumber(77,2,1,C64_WHITE,  C64_BLACK);
