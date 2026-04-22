@@ -7,6 +7,7 @@
 //#include "ekran1.h"
 #include "mapka_half.h"
 #include "cyfry_hud.h"
+#include "font_hud.h"
 //#include "ekran2.h"
 #define SPEED 3
 
@@ -58,7 +59,10 @@ int main(void) {
     POKE(0xD021, 0);  // tlo:   czarne             
 	DRAW_TILE(tree, 10, 10, 2, 2, C64_BLACK,C64_GREEN);
     DRAW_TILE(tree2, 12, 10, 2, 2, C64_BLACK,C64_GREEN);
-    
+  
+//DrawChar('A', 5, 2, C64_WHITE, C64_BLACK);
+    DrawText("hello world", 2, 1, C64_WHITE, C64_BLACK);    
+
 //mordor
  DRAW_TILE(n01, 0, 20, 4, 4, 11,0);
  DRAW_TILE(n02, 4, 20, 4, 4, 11,0 );
@@ -69,9 +73,10 @@ int main(void) {
  DRAW_TILE(n07, 24, 20, 4, 4, 11,0 );
  DRAW_TILE(n08, 28, 20, 4, 4, 11,0 );
  DRAW_TILE(n09, 32, 20, 4, 4, 11,0 );
- DRAW_TILE(n10, 36, 20, 4, 4, 11,0 );
+ DRAW_TILE(n10, 36, 20, 4, 4, 8,0 );
 
-
+DRAW_TILE(hobit1, 20, 1, 4, 4, 9,0 );
+ DRAW_TILE(hobit2, 24, 1, 4, 4, 9,0 );
 //
 
     //DRAW_TILE(ekran1, 0, 0, 20, 25, C64_GREEN, C64_BLACK);
