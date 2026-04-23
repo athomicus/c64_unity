@@ -60,6 +60,14 @@ int main(void) {
 
     DRAW_TILE(tree, 10, 10, 2, 2, C64_BLACK,C64_GREEN);
     DRAW_TILE(tree2, 12, 10, 2, 2, C64_BLACK,C64_GREEN);
+    DRAW_TILE(pien, 14, 10, 2, 2, C64_BROWN,C64_BLACK );
+    DRAW_TILE(roslina, 16, 10, 2, 2, C64_LIGHTGREEN,C64_BLACK );
+    DRAW_TILE(stone, 18, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
+    DRAW_TILE(dom1, 20, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
+    DRAW_TILE(dom2, 22, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
+    DRAW_TILE(dom3, 24, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
+    DRAW_TILE(dom4, 26, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
+
   
 //DrawChar('A', 5, 2, C64_WHITE, C64_BLACK);
     DrawText("hello world", 2, 1, C64_WHITE, C64_BLACK);    
@@ -148,3 +156,51 @@ DrawNumber(77,2,1,C64_WHITE,  C64_BLACK);
  
     return 0;
 }
+
+
+
+//$D01E — sprite–sprite collision
+// Kazdy bit = jeden sprite (bit 0 = sprite 0, bit 1 = sprite 1 itd.)
+// Jesli bit jest ustawiony = ten sprite bral udzial w kolizji
+//unsigned char col = *((unsigned char*)0xD01E);
+
+//if (col & 0x01) { /* sprite 0 (gracz) zderzyl sie z czyms */ }
+//if (col & 0x02) { /* sprite 1 zderzyl sie z czyms */ }
+/*
+void CheckSpriteCollisions(void) {
+    unsigned char col = *((unsigned char*)0xD01E);
+
+    // Gracz (slot 0) uderzyl w kogos?
+    // col & 0x01 = gracz bral udzial
+    // col & 0x02 = slot 1 (enemy) bral udzial
+    // Oba bity = kolizja GRACZA z WROGIEM
+
+    if ((col & 0x01) && (col & 0x02)) {
+        // gracz <-> enemy1
+        playerHP -= 10;
+        DrawNumber(playerHP, 1, 24, C64_WHITE, C64_BLACK);
+    }
+
+    if ((col & 0x01) && (col & 0x04)) {
+        // gracz <-> enemy2 (slot 2)
+        playerHP -= 10;
+    }
+
+    if (ringActive) {
+        // Hobbit niewidzialny — ignoruj kolizje z wrogami
+        return;
+    }
+
+    
+    Slot	Bit	Maska	Proponowane użycie
+0	bit 0	0x01	Gracz (Hobbit)
+1	bit 1	0x02	Enemy 1
+2	bit 2	0x04	Enemy 2
+3	bit 3	0x08	Ork
+4	bit 4	0x10	Enemy 4 / Boss
+5	bit 5	0x20	Pocisk / strzała
+6	bit 6	0x40	Skarb latający / NPC
+7	bit 7	0x80	Pocisk wroga
+    
+    */
+
