@@ -10,7 +10,7 @@
 #include "font_hud.h"
 //#include "ekran2.h"
 #define SPEED 3
-
+#define ANIM_SPEED 9
 // ============================================================
 //  Wlacza tryb hires bez kopiowania danych
 //  (odpowiednik BITMAP() ale bez memcpy)
@@ -39,6 +39,8 @@ int main(void) {
     unsigned char shipY    = 120;        // startowa pozycja Y statku
 	unsigned int  playerX    = 280;        // startowa pozycja X statku
     unsigned char playerY    = 120;        // startowa pozycja Y statku
+    unsigned char animFrame   = 0;  // 0 lub 1
+    unsigned char animTimer   = 0;  // licznik klatek
  
 	unsigned int joy;
 	clock_t gameClock = clock();    
@@ -124,7 +126,30 @@ DrawNumber(77,2,1,C64_WHITE,  C64_BLACK);
 		{
            gameClock = clock();
 
-			//######### SPRITE 01
+			//SPRITE DIAMOND
+            animTimer++;
+            if(animTimer>=ANIM_SPEED)
+            {
+                animTimer=0; //wyzeruj timer dla animacji sprite
+                animFrame ^= 1;  // przełącz 0->1->0->1
+                 if (animFrame == 0) 
+                 {
+                    SPRITE(3, diamond1,  85, 85,  C64_LIGHTBLUE );
+                 } 
+                 else
+                 {
+                    SPRITE(3, diamond2,  85, 85,  C64_BLUE);
+                 }
+
+            }
+
+
+
+            //
+           
+           
+           
+           //######### SPRITE 01
             // Przesuń statek w lewo
             if (shipX > 24)
                 shipX -= 1;        // prędkość: zmień na 2 lub 3 dla szybszego ruchu
