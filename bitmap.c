@@ -50,6 +50,54 @@ void BITMAP_TILE(const unsigned char* data,
     }
 }
 
+
+void FILL_SCREEN_TILE(const unsigned char* data,
+                      unsigned char cells_w, unsigned char cells_h,
+                      unsigned char fg,      unsigned char bg)
+{
+   static unsigned char  tx, ty;
+   static unsigned char  tile_cx, tile_cy;
+   static unsigned int   tile_cell;           // ← POPRAWKA: int, nie char
+   static  unsigned int   color_offset;        // ← NOWE: wsparcie dla AUTO
+   static unsigned char  orig_color, color;
+   static unsigned char* pix_ptr;
+   static unsigned char* col_ptr;
+
+    color_offset = (unsigned int)cells_w * cells_h * 8;  // ← NOWE
+
+    pix_ptr  = (unsigned char*)0x6000;
+    col_ptr  = (unsigned char*)0x4400;
+
+    for (ty = 0; ty < 25; ty++) {
+        tile_cy = ty % cells_h;
+        for (tx = 0; tx < 40; tx++) {
+            tile_cx  = tx % cells_w;
+            tile_cell = (unsigned int)tile_cy * cells_w + tile_cx;  // ← int!
+
+            memcpy(pix_ptr, data + tile_cell * 8, 8);
+
+            // Obsługa TILE_COLOR_AUTO — jak w DRAW_TILE
+            orig_color = *(data + color_offset + tile_cell);
+
+            if (fg == TILE_COLOR_AUTO && bg == TILE_COLOR_AUTO) {
+                color = orig_color;
+            } else if (fg == TILE_COLOR_AUTO) {
+                color = (orig_color & 0xF0) | (bg & 0x0F);
+            } else if (bg == TILE_COLOR_AUTO) {
+                color = (fg << 4) | (orig_color & 0x0F);
+            } else {
+                color = (fg << 4) | (bg & 0x0F);
+            }
+
+            *col_ptr = color;
+
+            pix_ptr += 8;
+            col_ptr += 1;
+        }
+    }
+}
+
+
 // ============================================================
 //  DRAW_TILE(data, dest_cx, dest_cy, cells_w, cells_h, fg, bg)
 //
@@ -72,6 +120,10 @@ void BITMAP_TILE(const unsigned char* data,
 //    DRAW_TILE(sand,  8, 3, 4, 4, 7, 9);   // zolty na brazowym
 //    DRAW_TILE(rock,  12,3, 4, 4, 11, 0);  // ciemnoszary na czarnym
 // ============================================================
+
+
+
+
 void DRAW_TILE(const unsigned char* data,
                unsigned char dest_cx, unsigned char dest_cy,
                unsigned char cells_w, unsigned char cells_h,

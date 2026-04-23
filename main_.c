@@ -39,41 +39,42 @@ int main(void) {
     unsigned char shipY    = 120;        // startowa pozycja Y statku
 	unsigned int  playerX    = 280;        // startowa pozycja X statku
     unsigned char playerY    = 120;        // startowa pozycja Y statku
+ 
 	unsigned int joy;
 	clock_t gameClock = clock();    
 	clrscr();
     InitSFX();
-	LoadMusic("dupa.mus");
-    PlayMusic();
-	
- // Zaladuj muzyke (musi byc w projekcie jako asset)
  
 	 
    
   InitHiRes(); 
 	//BITMAP_COLOR(0,0);
-	BITMAP(mapa);
+	//BITMAP(mapa);
    
 	//320x200 ale od [x+24, y+50, x+344,y+250]
     POKE(0xD020, 0);  // ramka: czarna
     POKE(0xD021, 0);  // tlo:   czarne             
-	DRAW_TILE(tree, 10, 10, 2, 2, C64_BLACK,C64_GREEN);
+// narysuj  wszedzie trawe:
+// FILL_SCREEN_TILE(grass,2,2, 11, 0);
+    
+
+    DRAW_TILE(tree, 10, 10, 2, 2, C64_BLACK,C64_GREEN);
     DRAW_TILE(tree2, 12, 10, 2, 2, C64_BLACK,C64_GREEN);
   
 //DrawChar('A', 5, 2, C64_WHITE, C64_BLACK);
     DrawText("hello world", 2, 1, C64_WHITE, C64_BLACK);    
 
 //mordor
- DRAW_TILE(n01, 0, 20, 4, 4, 11,0);
- DRAW_TILE(n02, 4, 20, 4, 4, 11,0 );
- DRAW_TILE(n03, 8, 20, 4, 4, 11,0 );
- DRAW_TILE(n04, 12, 20, 4, 4, 11,0 );
- DRAW_TILE(n05, 16, 20, 4, 4, 11,0 );
- DRAW_TILE(n06, 20, 20, 4, 4, 11,0 );
- DRAW_TILE(n07, 24, 20, 4, 4, 11,0 );
- DRAW_TILE(n08, 28, 20, 4, 4, 11,0 );
- DRAW_TILE(n09, 32, 20, 4, 4, 11,0 );
- DRAW_TILE(n10, 36, 20, 4, 4, 8,0 );
+ DRAW_TILE(n01, 0, 21, 4, 4, 11,0);
+ DRAW_TILE(n02, 4, 21, 4, 4, 11,0 );
+ DRAW_TILE(n03, 8, 21, 4, 4, 11,0 );
+ DRAW_TILE(n04, 12, 21, 4, 4, 11,0 );
+ DRAW_TILE(n05, 16, 21, 4, 4, 11,0 );
+ DRAW_TILE(n06, 20, 21, 4, 4, 11,0 );
+ DRAW_TILE(n07, 24, 21, 4, 4, 11,0 );
+ DRAW_TILE(n08, 28, 21, 4, 4, 11,0 );
+ DRAW_TILE(n09, 32, 21, 4, 4, 11,0 );
+ DRAW_TILE(n10, 36, 21, 4, 4, 8,0 );
 
 DRAW_TILE(hobit1, 20, 1, 4, 4, 9,0 );
  DRAW_TILE(hobit2, 24, 1, 4, 4, 9,0 );
@@ -101,6 +102,12 @@ DRAW_TILE(hobit1, 20, 1, 4, 4, 9,0 );
     
 DrawNumber(77,2,1,C64_WHITE,  C64_BLACK);
 	while (1) {
+
+
+ //	LoadMusic("dupa.mus");
+//   PlayMusic();
+	
+ // Zaladuj muzyke (musi byc w projekcie jako asset)
 		
 		  
 	

@@ -105,11 +105,11 @@ def convert(input_path, tile_name, forced_bg=0):
         f.write(f"  /* --- piksele ({PIXEL_BYTES}B) --- */\n")
         for i in range(0, PIXEL_BYTES, 8):
             chunk = data[i:i+8]
-            f.write("  " + ", ".join(f"0x{{b:02X}}" for b in chunk) + ",\n")
+            f.write(" " + ", ".join(f"0x{b:02X}" for b in chunk) + ",\n")
         f.write(f"  /* --- kolory ({COLOR_BYTES}B: gorny nibble=fg, dolny=bg) --- */\n")
         for i in range(PIXEL_BYTES, total, 8):
             chunk = data[i:min(i+8, total)]
-            f.write("  " + ", ".join(f"0x{{b:02X}}" for b in chunk) + ",\n")
+            f.write("  " + ", ".join(f"0x{b:02X}" for b in chunk) + ",\n")
         f.write("};\n\n#endif\n")
 
     print(f"Zapisano: {out_path} ({total} bajtow)")

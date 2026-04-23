@@ -23,6 +23,11 @@
 #define C64_LIGHTBLUE   14
 #define C64_LIGHTGRAY   15
 
+//wypelnij jednym kaflem tlo
+void FILL_SCREEN_TILE(const unsigned char* data,
+                      unsigned char cells_w, unsigned char cells_h,
+                      unsigned char fg,      unsigned char bg);
+
 // Wlacz tryb hires bitmap, skopiuj pelne dane 9000B na ekran
 void BITMAP(const unsigned char* data);
 
