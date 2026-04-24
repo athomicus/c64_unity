@@ -8,9 +8,14 @@
 #include "mapka_half.h"
 #include "cyfry_hud.h"
 #include "font_hud.h"
+//#include "raster.h"
 //#include "ekran2.h"
 #define SPEED 3
 #define ANIM_SPEED 9
+#define SPRITE_ENABLE(slot)   *((unsigned char*)0xD015) |=  (1 << (slot))
+#define SPRITE_DISABLE(slot)  *((unsigned char*)0xD015) &= ~(1 << (slot))
+unsigned char points = 0;
+unsigned char ringCollected = 0;
 // ============================================================
 //  Wlacza tryb hires bez kopiowania danych
 //  (odpowiednik BITMAP() ale bez memcpy)
@@ -30,6 +35,42 @@ void InitHiRes(void) {
     VIC.ctrl2 &= ~0x10;   // MCM = 0
     VIC.addr   =  0x18;   // bitmapa @ 0x6000, coloram @ 0x4400
 }
+ 
+
+void CheckSpriteCollisions(void)
+ {
+    unsigned char col = *((unsigned char*)0xD01E);
+    //$D01E — sprite–sprite collision
+    // Gracz (slot 0) uderzyl w kogos?
+    // col & 0x01 = gracz bral udzial
+    // col & 0x02 = slot 1 (enemy) bral udzial
+    // Oba bity = kolizja GRACZA z WROGIEM
+
+    if ((col & 0x01) && (col & 0x08)) {
+        // gracz zbiera pierscien
+        if(!ringCollected )
+        {
+            points += 10;
+            DrawNumber(points, 1, 24, C64_WHITE, C64_BLACK);
+            SPRITE_DISABLE(3);
+            ringCollected=1;
+        }
+         
+    }
+/*
+
+    Slot	Bit	Maska	Proponowane użycie
+0	bit 0	0x01	PLAYER (Hobbit)
+1	bit 1	0x02	NASGUL
+2	bit 2	0x04	ORK
+3	bit 3	0x08	RING
+4	bit 4	0x10	
+5	bit 5	0x20	
+6	bit 6	0x40	
+7	bit 7	0x80	
+*/
+}
+
 
 // ============================================================
 //  MAIN
@@ -41,7 +82,7 @@ int main(void) {
     unsigned char playerY    = 120;        // startowa pozycja Y statku
     unsigned char animFrame   = 0;  // 0 lub 1
     unsigned char animTimer   = 0;  // licznik klatek
- 
+   
 	unsigned int joy;
 	clock_t gameClock = clock();    
 	clrscr();
@@ -110,8 +151,12 @@ DRAW_TILE(hobit1, 20, 1, 4, 4, 9,0 );
 	SPRITE(2, spriteOrc, 50,  50,  5);  // zielony
 
     
-DrawNumber(77,2,1,C64_WHITE,  C64_BLACK);
-	while (1) {
+    DrawNumber(points,2,1,C64_WHITE,  C64_BLACK);
+	
+  //SetAtmosphere(6, 14, 6);   // niebo=niebieski, ramka=niebieski
+//SetMordorColors();
+    while (1) {
+
 
 
  //	LoadMusic("dupa.mus");
@@ -128,21 +173,23 @@ DrawNumber(77,2,1,C64_WHITE,  C64_BLACK);
 
 			//SPRITE DIAMOND
             animTimer++;
-            if(animTimer>=ANIM_SPEED)
+            if(animTimer>=ANIM_SPEED && !ringCollected)
             {
                 animTimer=0; //wyzeruj timer dla animacji sprite
                 animFrame ^= 1;  // przełącz 0->1->0->1
                  if (animFrame == 0) 
                  {
-                    SPRITE(3, diamond1,  85, 85,  C64_LIGHTBLUE );
+                    SPRITE(3, ring1,  85, 85,  C64_LIGHTBLUE );
                  } 
                  else
                  {
-                    SPRITE(3, diamond2,  85, 85,  C64_BLUE);
+                    SPRITE(3, ring2,  85, 85,  C64_BLUE);
                  }
 
             }
+            ////////////////////////////
 
+            CheckSpriteCollisions();
 
 
             //
@@ -217,15 +264,7 @@ void CheckSpriteCollisions(void) {
     }
 
     
-    Slot	Bit	Maska	Proponowane użycie
-0	bit 0	0x01	Gracz (Hobbit)
-1	bit 1	0x02	Enemy 1
-2	bit 2	0x04	Enemy 2
-3	bit 3	0x08	Ork
-4	bit 4	0x10	Enemy 4 / Boss
-5	bit 5	0x20	Pocisk / strzała
-6	bit 6	0x40	Skarb latający / NPC
-7	bit 7	0x80	Pocisk wroga
+
     
     */
 
