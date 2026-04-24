@@ -72,6 +72,40 @@ void CheckSpriteCollisions(void)
 }
 
 
+void DrawMap(void) {
+    unsigned char x, y;
+    unsigned char t;
+     for (y = 0; y < 10; y++) 
+     {
+        for (x = 0; x < 20; x++) 
+        {
+           if (mapa[y][x] == 1)
+           {
+             DRAW_TILE(tree, x*2, y*2+5, 2, 2, C64_BLACK,C64_GREEN);     
+           }
+           if (mapa[y][x] == 2)
+           {
+             DRAW_TILE(tree2, x*2, y*2+5, 2, 2, C64_BLACK,C64_GREEN);     
+           }
+           if (mapa[y][x] == 3)
+           {
+             DRAW_TILE(pien, x*2, y*2+5, 2, 2,  C64_BROWN,C64_BLACK);     
+           }           
+           if (mapa[y][x] == 4)
+           {
+             DRAW_TILE(roslina, x*2, y*2+5, 2, 2,  C64_GREEN,C64_BLACK);     
+           }
+           
+           if (mapa[y][x] == 5)
+           {
+             DRAW_TILE(stone, x*2, y*2+5, 2, 2,  C64_LIGHTGRAY,C64_BLACK);     
+           }
+
+    
+            
+        }
+    }
+}  
 // ============================================================
 //  MAIN
 // ============================================================
@@ -100,35 +134,35 @@ int main(void) {
 // narysuj  wszedzie trawe:
 // FILL_SCREEN_TILE(grass,2,2, 11, 0);
     
-
-    DRAW_TILE(tree, 10, 10, 2, 2, C64_BLACK,C64_GREEN);
-    DRAW_TILE(tree2, 12, 10, 2, 2, C64_BLACK,C64_GREEN);
-    DRAW_TILE(pien, 14, 10, 2, 2, C64_BROWN,C64_BLACK );
-    DRAW_TILE(roslina, 16, 10, 2, 2, C64_LIGHTGREEN,C64_BLACK );
-    DRAW_TILE(stone, 18, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
-    DRAW_TILE(dom1, 20, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
-    DRAW_TILE(dom2, 22, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
-    DRAW_TILE(dom3, 24, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
-    DRAW_TILE(dom4, 26, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
+    DrawMap();
+   // DRAW_TILE(tree, 10, 10, 2, 2, C64_BLACK,C64_GREEN);  1
+   // DRAW_TILE(tree2, 12, 10, 2, 2, C64_BLACK,C64_GREEN); 2   
+    //DRAW_TILE(pien, 14, 10, 2, 2, C64_BROWN,C64_BLACK ); 3
+  //  DRAW_TILE(roslina, 16, 10, 2, 2, C64_LIGHTGREEN,C64_BLACK ); 4
+  //  DRAW_TILE(stone, 18, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );  5
+   // DRAW_TILE(dom1, 20, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
+  //  DRAW_TILE(dom2, 22, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
+   // DRAW_TILE(dom3, 24, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
+   // DRAW_TILE(dom4, 26, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
 
   
 //DrawChar('A', 5, 2, C64_WHITE, C64_BLACK);
     DrawText("hello world", 2, 1, C64_WHITE, C64_BLACK);    
 
-//mordor
- DRAW_TILE(n01, 0, 21, 4, 4, 11,0);
- DRAW_TILE(n02, 4, 21, 4, 4, 11,0 );
- DRAW_TILE(n03, 8, 21, 4, 4, 11,0 );
- DRAW_TILE(n04, 12, 21, 4, 4, 11,0 );
- DRAW_TILE(n05, 16, 21, 4, 4, 11,0 );
- DRAW_TILE(n06, 20, 21, 4, 4, 11,0 );
- DRAW_TILE(n07, 24, 21, 4, 4, 11,0 );
- DRAW_TILE(n08, 28, 21, 4, 4, 11,0 );
- DRAW_TILE(n09, 32, 21, 4, 4, 11,0 );
- DRAW_TILE(n10, 36, 21, 4, 4, 8,0 );
+//mordor speak
+ DRAW_TILE(n01, 0, 0, 4, 4, 11,0);
+ DRAW_TILE(n02, 4, 0, 4, 4, 11,0 );
+ DRAW_TILE(n03, 8, 0, 4, 4, 11,0 );
+ DRAW_TILE(n04, 12, 0, 4, 4, 11,0 );
+ DRAW_TILE(n05, 16, 0, 4, 4, 11,0 );
+ DRAW_TILE(n06, 20, 0, 4, 4, 11,0 );
+ DRAW_TILE(n07, 24, 0, 4, 4, 11,0 );
+ DRAW_TILE(n08, 28, 0, 4, 4, 11,0 );
+ DRAW_TILE(n09, 32, 0, 4, 4, 11,0 );
+ DRAW_TILE(n10, 36, 0, 4, 4, 8,0 );
 
-DRAW_TILE(hobit1, 20, 1, 4, 4, 9,0 );
- DRAW_TILE(hobit2, 24, 1, 4, 4, 9,0 );
+ DRAW_TILE(hobit1, 32, 20, 4, 4, 9,0 ); //chata 1
+ DRAW_TILE(hobit2, 36, 20, 4, 4, 9,0 ); //chata 2
 //
 
     //DRAW_TILE(ekran1, 0, 0, 20, 25, C64_GREEN, C64_BLACK);

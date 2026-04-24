@@ -2,6 +2,9 @@
 #include "bitmap.h"
 #include <c64.h>
 #include <string.h>
+ 
+
+//screen 40x25  1=8px
 
 void BITMAP(const unsigned char* data) {
     *((unsigned char*)0xDD00) = (*((unsigned char*)0xDD00) & 0xFC) | 0x02;
@@ -240,6 +243,9 @@ void DRAW_TILE_FLIP_H(const unsigned char* data,
         }
     }
 }
+
+  
+
 
 /*
 
