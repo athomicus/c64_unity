@@ -74,7 +74,7 @@ void CheckSpriteCollisions(void)
 
 void DrawMap(void) {
     unsigned char x, y;
-    unsigned char t;
+    
      for (y = 0; y < 10; y++) 
      {
         for (x = 0; x < 20; x++) 
@@ -101,7 +101,62 @@ void DrawMap(void) {
              DRAW_TILE(stone, x*2, y*2+5, 2, 2,  C64_LIGHTGRAY,C64_BLACK);     
            }
 
-    
+           if (mapa[y][x] == 6)
+           {
+             DRAW_TILE(tree_left, x*2, y*2+5, 2, 2, C64_GREEN, C64_BLACK);     
+           }
+          
+           if (mapa[y][x] == 7)
+           {
+             DRAW_TILE(tree_center,x*2, y*2+5, 2, 2, C64_GREEN, C64_BLACK);     
+           }
+          
+           if (mapa[y][x] == 8)
+           {
+             DRAW_TILE(tree_right, x*2, y*2+5, 2, 2,  C64_GREEN, C64_BLACK);     
+           }
+          
+           if (mapa[y][x] == 9)
+           {
+             DRAW_TILE(tree_up, x*2, y*2+5, 2, 2, C64_GREEN, C64_BLACK);     
+           }
+
+           if (mapa[y][x] == 13)
+           {
+             DRAW_TILE(plant_up, x*2, y*2+5, 2, 2, C64_GREEN, C64_BLACK);     
+           }
+           
+           if (mapa[y][x] == 10)
+           {
+             DRAW_TILE(plant_left, x*2, y*2+5, 2, 2, C64_GREEN, C64_BLACK);     
+           }
+
+           
+           if (mapa[y][x] == 11)
+           {
+             DRAW_TILE(plant_center, x*2, y*2+5, 2, 2, C64_GREEN, C64_BLACK);     
+           }
+
+           
+           if (mapa[y][x] == 12)
+           {
+             DRAW_TILE(plant_right, x*2, y*2+5, 2, 2, C64_GREEN, C64_BLACK);     
+           }
+
+            if (mapa[y][x] == 14)
+           {
+             DRAW_TILE(stone_left, x*2, y*2+5, 2, 2, C64_LIGHTGRAY, C64_BLACK);     
+           }
+
+           
+           if (mapa[y][x] == 15)
+           {
+             DRAW_TILE(stone_center, x*2, y*2+5, 2, 2, C64_LIGHTGRAY, C64_BLACK);     
+           }
+           if (mapa[y][x] == 16)
+           {
+             DRAW_TILE(stone_right, x*2, y*2+5, 2, 2, C64_LIGHTGRAY, C64_BLACK);     
+           }
             
         }
     }
@@ -133,8 +188,14 @@ int main(void) {
     POKE(0xD021, 0);  // tlo:   czarne             
 // narysuj  wszedzie trawe:
 // FILL_SCREEN_TILE(grass,2,2, 11, 0);
-    
+   
     DrawMap();
+
+//HObbit cottage
+    DRAW_TILE(hobit1, 32, 20, 4, 4, 9,0 ); //chata 1
+    DRAW_TILE(hobit2, 36, 20, 4, 4, 9,0 ); //chata 2
+//
+
    // DRAW_TILE(tree, 10, 10, 2, 2, C64_BLACK,C64_GREEN);  1
    // DRAW_TILE(tree2, 12, 10, 2, 2, C64_BLACK,C64_GREEN); 2   
     //DRAW_TILE(pien, 14, 10, 2, 2, C64_BROWN,C64_BLACK ); 3
@@ -161,8 +222,7 @@ int main(void) {
  DRAW_TILE(n09, 32, 0, 4, 4, 11,0 );
  DRAW_TILE(n10, 36, 0, 4, 4, 8,0 );
 
- DRAW_TILE(hobit1, 32, 20, 4, 4, 9,0 ); //chata 1
- DRAW_TILE(hobit2, 36, 20, 4, 4, 9,0 ); //chata 2
+
 //
 
     //DRAW_TILE(ekran1, 0, 0, 20, 25, C64_GREEN, C64_BLACK);
