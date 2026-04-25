@@ -186,9 +186,58 @@ int main(void) {
 	//320x200 ale od [x+24, y+50, x+344,y+250]
     POKE(0xD020, 0);  // ramka: czarna
     POKE(0xD021, 0);  // tlo:   czarne             
-// narysuj  wszedzie trawe:
+
+ 
+
+//mordor speak language
+ DRAW_TILE(n01, 0, 0, 4, 4, 2,0);
+ DRAW_TILE(n02, 4, 0, 4, 4, 2,0 );
+ DRAW_TILE(n03, 8, 0, 4, 4, 2,0 );
+ DRAW_TILE(n04, 12, 0, 4, 4, 2,0 );
+ DRAW_TILE(n05, 16, 0, 4, 4, 2,0 );
+ DRAW_TILE(n06, 20, 0, 4, 4, 2,0 );
+ DRAW_TILE(n07, 24, 0, 4, 4, 2,0 );
+ DRAW_TILE(n08, 28, 0, 4, 4, 2,0 );
+ DRAW_TILE(n09, 32, 0, 4, 4, 2,0 );
+ DRAW_TILE(n10, 36, 0, 4, 4, 2,0 );
+
+//DrawChar('A', 5, 2, C64_WHITE, C64_BLACK);
+    DrawText("One Ring to rule them all", 6, 7, C64_WHITE, C64_BLACK);    
+    DrawText("One Ring to find them", 9, 9, C64_WHITE, C64_BLACK);    
+    DrawText("One Ring to bring them all", 6, 11, C64_WHITE, C64_BLACK);    
+    DrawText("and in the darkness bind them",5,13, C64_WHITE, C64_BLACK); 
+
+//draw how to play
+DrawText("Find the other Rings avoid enemies",3, 18, C64_DARKGRAY , C64_BLACK);    
+DrawText("bring the Rings to the hobbits hut", 2, 19, C64_DARKGRAY , C64_BLACK);    
+DrawText("Use the ONE RING ",10,21, C64_DARKGRAY , C64_BLACK);    
+DrawText("press fire button to become invisible",0,22, C64_DARKGRAY , C64_BLACK);    
+DrawText("but it slowly kills you", 7, 23, C64_DARKGRAY , C64_BLACK); 
+DrawText("Getting caught means instant death", 2, 24, C64_DARKGRAY , C64_BLACK);   
+
+
+     // Czekaj na fire (joystick port 2)
+
+while (1) {
+    joy = ~GetJoy(0);
+    if (joy & JOY_BTN1) break;
+}
+
+
+InitHiRes();
+    // narysuj  wszedzie trawe:
 // FILL_SCREEN_TILE(grass,2,2, 11, 0);
-   
+   //mordor speak language
+ DRAW_TILE(n01, 0, 0, 4, 4, 11,0);
+ DRAW_TILE(n02, 4, 0, 4, 4, 11,0 );
+ DRAW_TILE(n03, 8, 0, 4, 4, 11,0 );
+ DRAW_TILE(n04, 12, 0, 4, 4, 11,0 );
+ DRAW_TILE(n05, 16, 0, 4, 4, 11,0 );
+ DRAW_TILE(n06, 20, 0, 4, 4, 11,0 );
+ DRAW_TILE(n07, 24, 0, 4, 4, 11,0 );
+ DRAW_TILE(n08, 28, 0, 4, 4, 11,0 );
+ DRAW_TILE(n09, 32, 0, 4, 4, 11,0 );
+ DRAW_TILE(n10, 36, 0, 4, 4, 11,0 );
     DrawMap();
 
 //HObbit cottage
@@ -207,20 +256,7 @@ int main(void) {
    // DRAW_TILE(dom4, 26, 10, 2, 2, C64_LIGHTGRAY  ,C64_BLACK );
 
   
-//DrawChar('A', 5, 2, C64_WHITE, C64_BLACK);
-    DrawText("hello world", 2, 1, C64_WHITE, C64_BLACK);    
-
-//mordor speak
- DRAW_TILE(n01, 0, 0, 4, 4, 11,0);
- DRAW_TILE(n02, 4, 0, 4, 4, 11,0 );
- DRAW_TILE(n03, 8, 0, 4, 4, 11,0 );
- DRAW_TILE(n04, 12, 0, 4, 4, 11,0 );
- DRAW_TILE(n05, 16, 0, 4, 4, 11,0 );
- DRAW_TILE(n06, 20, 0, 4, 4, 11,0 );
- DRAW_TILE(n07, 24, 0, 4, 4, 11,0 );
- DRAW_TILE(n08, 28, 0, 4, 4, 11,0 );
- DRAW_TILE(n09, 32, 0, 4, 4, 11,0 );
- DRAW_TILE(n10, 36, 0, 4, 4, 8,0 );
+   
 
 
 //
