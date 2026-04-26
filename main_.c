@@ -7,18 +7,58 @@
 #include "font_hud.h"
  
 // Hitbox sprite 24x21 z insetem 4px:
-#define HB_L  4   // lewy  narożnik hitboxu (od lewej krawędzi sprite'a)
-#define HB_R 19   // prawy narożnik hitboxu (24 - 5)
-#define HB_T  4   // górny narożnik
-#define HB_B 16   // dolny narożnik (21 - 5)
-
+#define HB_L  6   // lewy  narożnik hitboxu (od lewej krawędzi sprite'a)
+#define HB_R 10  // prawy narożnik hitboxu (24 - 5)
+#define HB_T  6   // górny narożnik
+#define HB_B 10   // dolny narożnik (21 - 5)
+#define COTTAGE_X1  280
+#define COTTAGE_Y1  210
+#define COTTAGE_X2  312   // 280 + 32
+#define COTTAGE_Y2  242   // 210 + 33
 #define SPEED 3
 #define ANIM_SPEED 9
 #define SPRITE_ENABLE(slot)   *((unsigned char*)0xD015) |=  (1 << (slot))
 #define SPRITE_DISABLE(slot)  *((unsigned char*)0xD015) &= ~(1 << (slot))
 unsigned char points = 0;
 unsigned char ringCollected = 0;
+unsigned int  playerX    = 100;        // startowa pozycja X statku
+unsigned char playerY    = 110;        // startowa pozycja Y statku
+unsigned char level_map = 1;
 
+void CheckCottage(void) {
+    // Czy gracz ma pierscien I wszedl w obszar chaty
+    if (!ringCollected) return;  // nie ma pierscienia — ignoruj
+    
+    // AABB: hitbox gracza vs obszar chaty
+    if ((playerX + HB_R) > COTTAGE_X1 &&
+        (playerX + HB_L) < COTTAGE_X2 &&
+        (playerY + HB_B) > COTTAGE_Y1 &&
+        (playerY + HB_T) < COTTAGE_Y2)
+    {
+        points += 50;
+        DrawNumber(points, 33, 2, C64_WHITE, C64_BLACK);
+        ringCollected = 0;        // pierscien oddany — mozna zbierac nastepny
+        SPRITE_ENABLE(3);         // pierscien znow widoczny na mapie
+        // tu mozna dodac dzwiek / animacje
+    }
+}
+
+
+void CkeckMapChange(void) {
+    // Czy gracz wszedl w obszar przejscia do drugiej mapy
+   // Kolumna 5 (tx=5, indeks od 0):
+   // X = 5 * 16 + 24 = 80 + 24 = 104 px
+   // Kolumna 6 (tx=6):
+   // X = 6 * 16 + 24 = 96 + 24 = 120 px
+    if (level_map == 1) 
+    {
+        if((playerX > 82) && (playerX  < 106) && (playerY > 230))  level_map = 2;        
+    }else if (level_map == 2)
+    {
+        if((playerX > 82) && (playerX  < 106) && (playerY <118))  level_map = 1;        
+    }
+     
+}
 void RestartGame(void) {
     // Skok bezpośrednio na adres startowy programu
     __asm__("jmp $180D");   // adres jmp z buildu — masz go w loaderze!
@@ -61,7 +101,7 @@ void CheckSpriteCollisions(void)
         if(!ringCollected )
         {
             points += 10;
-            DrawNumber(points, 1, 24, C64_WHITE, C64_BLACK);
+            DrawNumber(points, 33, 2, C64_WHITE, C64_BLACK);
             SPRITE_DISABLE(3);
             ringCollected=1;
         }
@@ -84,12 +124,20 @@ void CheckSpriteCollisions(void)
 unsigned char CanWalk(unsigned int px, unsigned int py)
 {
     unsigned char tx, ty;
-    if (px < 24 || px > 343) return 0;
-    if (py < 90 || py > 249) return 0;
+    //if (px < 24 || px > 343) return 0;
+    //if (py < 90 || py > 249) return 0;
     tx = (unsigned char)((px - 24) / 16);
     ty = (unsigned char)((py - 90) / 16);
-    if (tx >= 20 || ty >= 10) return 0;
-    return (mapa[ty][tx] == 0) ? 1 : 0;
+    //if (tx >= 20 || ty >= 10) return 0;
+    if (level_map == 1)
+    {
+        return (mapa[ty][tx] == 0) ? 1 : 0;
+    }else if (level_map == 2)
+    {
+        return (mapa2[ty][tx] == 0) ? 1 : 0;
+    }
+
+     
 }
 
 void DrawMap(void) { // po Y offset 5 kafli w dol bo napis mordoru: 5*8 spikseli
@@ -184,8 +232,7 @@ void DrawMap(void) { // po Y offset 5 kafli w dol bo napis mordoru: 5*8 spikseli
 int main(void) {
  	unsigned int  shipX    = 280;        // startowa pozycja X statku
     unsigned char shipY    = 120;        // startowa pozycja Y statku
-	unsigned int  playerX    = 100;        // startowa pozycja X statku
-    unsigned char playerY    = 110;        // startowa pozycja Y statku
+	
     unsigned int  newX, newY;
     unsigned char animFrame   = 0;  // 0 lub 1
     unsigned char animTimer   = 0;  // licznik klatek
@@ -261,7 +308,7 @@ InitHiRes();
  DrawMap();
 
 //HObbit cottage
-    DRAW_TILE(hobbit_small, 32, 20, 4, 4, 9,0 ); //chata 
+    DRAW_TILE(hobbit_small, 34, 20, 4, 4, 9,0 ); //chata 
     //DRAW_TILE(hobit2, 36, 20, 4, 4, 9,0 ); //chata 2
 //
 
@@ -301,7 +348,7 @@ InitHiRes();
 	SPRITE(2, spriteOrc, 50,  50,  5);  // zielony
 
     
-    DrawNumber(points,2,1,C64_WHITE,  C64_BLACK);
+   // DrawNumber(points,2,1,C64_WHITE,  C64_BLACK);
 	
   //SetAtmosphere(6, 14, 6);   // niebo=niebieski, ramka=niebieski
 //SetMordorColors();
@@ -329,11 +376,11 @@ InitHiRes();
                 animFrame ^= 1;  // przełącz 0->1->0->1
                  if (animFrame == 0) 
                  {
-                    SPRITE(3, ring1,  85, 85,  C64_LIGHTBLUE );
+                    SPRITE(3, ring1,  85, 120,  C64_LIGHTBLUE );
                  } 
                  else
                  {
-                    SPRITE(3, ring2,  85, 85,  C64_BLUE);
+                    SPRITE(3, ring2,  85, 120,  C64_BLUE);
                  }
 
             }
@@ -399,7 +446,17 @@ InitHiRes();
             
             }
 			SPRITE_MOVE(0, playerX, playerY);	
-			 
+            CheckCottage();
+            
+            //TYLKO DO DEBUGU - pozycja gracza /////////////////////////////
+            // DrawText("X:",  0, 24, C64_WHITE,  C64_BLACK);
+             //DrawNumber((unsigned int)playerX, 2, 24, C64_BLACK, C64_BLACK);
+            // DrawNumber((unsigned int)playerX, 2, 24, C64_YELLOW, C64_BLACK);
+
+            // DrawText("Y:",  8, 24, C64_WHITE,  C64_BLACK);
+            // DrawNumber((unsigned int)playerY, 10, 24, C64_BLACK, C64_BLACK);
+             DrawNumber((unsigned int)playerY, 10, 24, C64_CYAN, C64_BLACK);
+            //////////////////////////////////////////////////////////////// 
 		 
 
         }
