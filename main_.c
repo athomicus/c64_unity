@@ -4,18 +4,25 @@
 #include "sprite.h"
 #include "sprites_data.h"
 #include "bitmap.h"
-//#include "ekran1.h"
-#include "mapka_half.h"
-#include "cyfry_hud.h"
 #include "font_hud.h"
-//#include "raster.h"
-//#include "ekran2.h"
+ 
+// Hitbox sprite 24x21 z insetem 4px:
+#define HB_L  4   // lewy  narożnik hitboxu (od lewej krawędzi sprite'a)
+#define HB_R 19   // prawy narożnik hitboxu (24 - 5)
+#define HB_T  4   // górny narożnik
+#define HB_B 16   // dolny narożnik (21 - 5)
+
 #define SPEED 3
 #define ANIM_SPEED 9
 #define SPRITE_ENABLE(slot)   *((unsigned char*)0xD015) |=  (1 << (slot))
 #define SPRITE_DISABLE(slot)  *((unsigned char*)0xD015) &= ~(1 << (slot))
 unsigned char points = 0;
 unsigned char ringCollected = 0;
+
+void RestartGame(void) {
+    // Skok bezpośrednio na adres startowy programu
+    __asm__("jmp $180D");   // adres jmp z buildu — masz go w loaderze!
+}
 // ============================================================
 //  Wlacza tryb hires bez kopiowania danych
 //  (odpowiednik BITMAP() ale bez memcpy)
@@ -28,12 +35,15 @@ void InitHiRes(void) {
     memset((unsigned char*)0x6000, 0x00, 8000);
 
     // Wyczysc coloram (1000 bajtow pod 0x4400) — wszystko czarne
-    memset((unsigned char*)0x4400, 0x00, 1000);
+    memset((unsigned char*)0x4800, 0x00, 1000);
 
     // Wlacz tryb bitmap hires
     VIC.ctrl1 |=  0x20;   // BMM = 1
     VIC.ctrl2 &= ~0x10;   // MCM = 0
-    VIC.addr   =  0x18;   // bitmapa @ 0x6000, coloram @ 0x4400
+    
+    //zmiana
+    //VIC.addr   =  0x18;   // bitmapa @ 0x6000, coloram @ 0x4400
+    VIC.addr = 0x28;
 }
  
 
@@ -71,8 +81,18 @@ void CheckSpriteCollisions(void)
 */
 }
 
+unsigned char CanWalk(unsigned int px, unsigned int py)
+{
+    unsigned char tx, ty;
+    if (px < 24 || px > 343) return 0;
+    if (py < 90 || py > 249) return 0;
+    tx = (unsigned char)((px - 24) / 16);
+    ty = (unsigned char)((py - 90) / 16);
+    if (tx >= 20 || ty >= 10) return 0;
+    return (mapa[ty][tx] == 0) ? 1 : 0;
+}
 
-void DrawMap(void) {
+void DrawMap(void) { // po Y offset 5 kafli w dol bo napis mordoru: 5*8 spikseli
     unsigned char x, y;
     
      for (y = 0; y < 10; y++) 
@@ -87,10 +107,7 @@ void DrawMap(void) {
            {
              DRAW_TILE(tree2, x*2, y*2+5, 2, 2, C64_BLACK,C64_GREEN);     
            }
-           if (mapa[y][x] == 3)
-           {
-             DRAW_TILE(pien, x*2, y*2+5, 2, 2,  C64_BROWN,C64_BLACK);     
-           }           
+                      
            if (mapa[y][x] == 4)
            {
              DRAW_TILE(roslina, x*2, y*2+5, 2, 2,  C64_GREEN,C64_BLACK);     
@@ -167,8 +184,9 @@ void DrawMap(void) {
 int main(void) {
  	unsigned int  shipX    = 280;        // startowa pozycja X statku
     unsigned char shipY    = 120;        // startowa pozycja Y statku
-	unsigned int  playerX    = 280;        // startowa pozycja X statku
-    unsigned char playerY    = 120;        // startowa pozycja Y statku
+	unsigned int  playerX    = 100;        // startowa pozycja X statku
+    unsigned char playerY    = 110;        // startowa pozycja Y statku
+    unsigned int  newX, newY;
     unsigned char animFrame   = 0;  // 0 lub 1
     unsigned char animTimer   = 0;  // licznik klatek
    
@@ -195,11 +213,11 @@ int main(void) {
  DRAW_TILE(n03, 8, 0, 4, 4, 2,0 );
  DRAW_TILE(n04, 12, 0, 4, 4, 2,0 );
  DRAW_TILE(n05, 16, 0, 4, 4, 2,0 );
- DRAW_TILE(n06, 20, 0, 4, 4, 2,0 );
- DRAW_TILE(n07, 24, 0, 4, 4, 2,0 );
- DRAW_TILE(n08, 28, 0, 4, 4, 2,0 );
- DRAW_TILE(n09, 32, 0, 4, 4, 2,0 );
- DRAW_TILE(n10, 36, 0, 4, 4, 2,0 );
+ DRAW_TILE(n02, 20, 0, 4, 4, 2,0 );
+ DRAW_TILE(n03, 24, 0, 4, 4, 2,0 );
+ DRAW_TILE(n05, 28, 0, 4, 4, 2,0 );
+ //DRAW_TILE(n04, 32, 0, 4, 4, 2,0 );
+// DRAW_TILE(n05, 36, 0, 4, 4, 2,0 );
 
 //DrawChar('A', 5, 2, C64_WHITE, C64_BLACK);
     DrawText("One Ring to rule them all", 6, 7, C64_WHITE, C64_BLACK);    
@@ -228,21 +246,23 @@ InitHiRes();
     // narysuj  wszedzie trawe:
 // FILL_SCREEN_TILE(grass,2,2, 11, 0);
    //mordor speak language
+ 
  DRAW_TILE(n01, 0, 0, 4, 4, 11,0);
  DRAW_TILE(n02, 4, 0, 4, 4, 11,0 );
  DRAW_TILE(n03, 8, 0, 4, 4, 11,0 );
  DRAW_TILE(n04, 12, 0, 4, 4, 11,0 );
  DRAW_TILE(n05, 16, 0, 4, 4, 11,0 );
- DRAW_TILE(n06, 20, 0, 4, 4, 11,0 );
- DRAW_TILE(n07, 24, 0, 4, 4, 11,0 );
- DRAW_TILE(n08, 28, 0, 4, 4, 11,0 );
- DRAW_TILE(n09, 32, 0, 4, 4, 11,0 );
- DRAW_TILE(n10, 36, 0, 4, 4, 11,0 );
-    DrawMap();
+ DRAW_TILE(n02, 20, 0, 4, 4, 11,0 );
+ DRAW_TILE(n03, 24, 0, 4, 4, 11,0 );
+ DRAW_TILE(n05, 28, 0, 4, 4, 11,0 );
+
+
+   
+ DrawMap();
 
 //HObbit cottage
-    DRAW_TILE(hobit1, 32, 20, 4, 4, 9,0 ); //chata 1
-    DRAW_TILE(hobit2, 36, 20, 4, 4, 9,0 ); //chata 2
+    DRAW_TILE(hobbit_small, 32, 20, 4, 4, 9,0 ); //chata 
+    //DRAW_TILE(hobit2, 36, 20, 4, 4, 9,0 ); //chata 2
 //
 
    // DRAW_TILE(tree, 10, 10, 2, 2, C64_BLACK,C64_GREEN);  1
@@ -276,7 +296,7 @@ InitHiRes();
 	
 	
 	
-	SPRITE(0, spritePlayer,  60,  80,  1);  // bialy
+	SPRITE(0, spritePlayer,  playerX,  playerY,  1);  // bialy
     SPRITE(1, spriteEnemy, 120,  80,  2);  // czerwony
 	SPRITE(2, spriteOrc, 50,  50,  5);  // zielony
 
@@ -343,10 +363,41 @@ InitHiRes();
 			
 			//joy = GetJoy(1);
 			 // Ruch
-            if (joy & JOY_UP)     { if (playerY > 50)  playerY -= SPEED; PlaySFX(SFX_GUN, 180, 255, 0); }
-            if (joy & JOY_DOWN)   { if (playerY < 220) playerY += SPEED; PlaySFX(SFX_GUN, 180, 255, 0);}
-			if (joy & JOY_LEFT)   { if (playerX > 24)  playerX -= SPEED; }
-            if (joy & JOY_RIGHT)  { if (playerX < 320) playerX += SPEED; }
+          
+             //unsigned char can_move =  CanWalk()
+            if (joy & JOY_UP)
+            { 
+                newX = playerX;
+                newY = playerY - SPEED;      
+                //Sprite 24x21 px jego srodek: x=24-12=12, y=21-10=~10
+                // mapa po Y zaczyna sie Y - 50(vic_offset)+10(sprite center) -40(napis mordoru) = -80
+              if (CanWalk(newX+HB_L, newY+HB_T) && CanWalk(newX+HB_R, newY+HB_T))    playerY = (unsigned char)newY;        
+            }
+            
+            
+            
+            if (joy & JOY_DOWN)   
+            {
+                newX = playerX;
+                newY =  playerY + SPEED;
+                if (CanWalk(newX+HB_L, newY+HB_B) && CanWalk(newX+HB_R, newY+HB_B))    playerY = (unsigned char)newY;
+            }
+			
+            if (joy & JOY_LEFT)
+            { 
+                newX = playerX - SPEED;
+                newY = playerY;
+                if (CanWalk(newX+HB_L, newY+HB_T) && CanWalk(newX+HB_L, newY+HB_B))      playerX = newX;
+            }    
+
+
+            if (joy & JOY_RIGHT)
+            { 
+               newX = playerX + SPEED;
+               newY = playerY;
+               if (CanWalk(newX+HB_R, newY+HB_T) && CanWalk(newX+HB_R, newY+HB_B))         playerX = newX;
+            
+            }
 			SPRITE_MOVE(0, playerX, playerY);	
 			 
 		 

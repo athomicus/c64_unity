@@ -23,28 +23,7 @@
 #define C64_LIGHTBLUE   14
 #define C64_LIGHTGRAY   15
 
-//wypelnij jednym kaflem tlo
-void FILL_SCREEN_TILE(const unsigned char* data,
-                      unsigned char cells_w, unsigned char cells_h,
-                      unsigned char fg,      unsigned char bg);
 
-// Wlacz tryb hires bitmap, skopiuj pelne dane 9000B na ekran
-void BITMAP(const unsigned char* data);
-
-// Wylacz tryb bitmap
-void BITMAP_OFF(void);
-
-// Ustaw jednolity kolor calej bitmapy
-void BITMAP_COLOR(unsigned char foreground, unsigned char background);
-
-// Kopiuj prostokat z pelnej bitmapy 9000B na ekran
-void BITMAP_TILE(const unsigned char* data,
-                 unsigned char src_cx,  unsigned char src_cy,
-                 unsigned char dest_cx, unsigned char dest_cy,
-                 unsigned char cells_w, unsigned char cells_h);
-
-// Rysuj maly kafel z opcjonalnym nadpisaniem kolorow
-// fg/bg = 0-15 (kolor C64) lub TILE_COLOR_AUTO (zachowaj oryginal)
 void DRAW_TILE(const unsigned char* data,
                unsigned char dest_cx, unsigned char dest_cy,
                unsigned char cells_w, unsigned char cells_h,
