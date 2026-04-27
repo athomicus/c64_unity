@@ -2,7 +2,7 @@
 #define SPRITES_DATA_H
 
 
-const unsigned char mapa[10][20] = {
+const unsigned char mapa1[10][20] = {
 /* [0] */ {0,9,9,9,9,9,9,9,9,9,      9,9,9,9,9,9,9,9,9,0},  //   9 9  choinki
 /* [1] */ {6,7,7,7,7,7,7,7,7,7,      7,7,7,7,7,7,7,7,7,8},  // 6 7 7 8 
 /* [2] */ {5,1,0,0,0,0,0,0,0,0,      0,0,0,0,0,0,0,0,1,5},  //1 choinka, 2 drzewo, 3 pien-deleted, 
