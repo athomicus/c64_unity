@@ -44,7 +44,7 @@ void CheckCottage(void) {
 }
 
 
-void CkeckMapChange(void) {
+void CheckMapChange(void) {
     // Czy gracz wszedl w obszar przejscia do drugiej mapy
    // Kolumna 5 (tx=5, indeks od 0):
    // X = 5 * 16 + 24 = 80 + 24 = 104 px
@@ -175,6 +175,7 @@ int main(void) {
     unsigned int  newX, newY;
     unsigned char animFrame   = 0;  // 0 lub 1
     unsigned char animTimer   = 0;  // licznik klatek
+    unsigned char previousLevel= 1;
    
 	unsigned int joy;
 	clock_t gameClock = clock();    
@@ -236,7 +237,9 @@ int main(void) {
    
 //////////////////////////////////////////////////    #######    MAIN LOOP  #############
     while (1) {
-     //	LoadMusic("dupa.mus");
+     
+     
+        //	LoadMusic("dupa.mus");
     //   PlayMusic();
      // Zaladuj muzyke (musi byc w projekcie jako asset)
 	
@@ -245,6 +248,7 @@ int main(void) {
 		{
            gameClock = clock();
 
+        //CheckMapChange();
 			//SPRITE DIAMOND
             animTimer++;
             if(animTimer>=ANIM_SPEED && !ringCollected)
@@ -264,6 +268,26 @@ int main(void) {
             ////////////////////////////
 
             CheckSpriteCollisions();
+            CheckMapChange();//player go into specicifc area of map 
+
+            if(level_map == 1) CheckCottage(); //hobbit cottage tylko w levelu 1
+            if(level_map != previousLevel) 
+            {
+                previousLevel = level_map;
+                InitHiRes(); //czysc ekran przy zmianie mapy
+                if (level_map==1) { 
+                     DrawMap(mapa1);   //tu zawsze bedzie Level 1
+                     
+                 //HOBBIT cottage
+                 DRAW_TILE(hobbit_small, 34, 20, 4, 4, 9,0 ); //chata 
+                    
+                    }
+                if (level_map==2)  DrawMap(mapa2); 
+                
+            }
+            
+
+
 
        
            //######### SPRITE 01
@@ -273,10 +297,10 @@ int main(void) {
             else
                 shipX = 320;       // gdy dojedzie do lewej — teleport na prawą
             // Aktualizuj tylko pozycję (bez kopiowania danych sprite'a!)
-            SPRITE_MOVE(1, shipX, shipY);
+            SPRITE_MOVE(1, shipX, shipY);	
 			
-			
-		 //######### SPRITE 02
+		 //######### 
+
 		 // Odczyt joysticka przez 8bit-Unity (port 2)
            joy = ~GetJoy(0);//^ 0x1F;
 		   
@@ -319,7 +343,7 @@ int main(void) {
             
             }
 			SPRITE_MOVE(0, playerX, playerY);	
-            CheckCottage();
+            
             
             //TYLKO DO DEBUGU - pozycja gracza /////////////////////////////
             // DrawText("X:",  0, 24, C64_WHITE,  C64_BLACK);
@@ -328,7 +352,7 @@ int main(void) {
 
             // DrawText("Y:",  8, 24, C64_WHITE,  C64_BLACK);
             // DrawNumber((unsigned int)playerY, 10, 24, C64_BLACK, C64_BLACK);
-             DrawNumber((unsigned int)playerY, 10, 24, C64_CYAN, C64_BLACK);
+            // DrawNumber((unsigned int)playerY, 10, 24, C64_CYAN, C64_BLACK);
             //////////////////////////////////////////////////////////////// 
 		 
 
