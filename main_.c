@@ -19,11 +19,14 @@
 #define ANIM_SPEED 9
 #define SPRITE_ENABLE(slot)   *((unsigned char*)0xD015) |=  (1 << (slot))
 #define SPRITE_DISABLE(slot)  *((unsigned char*)0xD015) &= ~(1 << (slot))
+#define MAP_BUF_BMP  ((unsigned char*)0x8000)  // 8000 bajtów
+#define MAP_BUF_COL  ((unsigned char*)0xA328)  // 1000 bajtów
 unsigned char points = 0;
 unsigned char ringCollected = 0;
 unsigned int  playerX    = 100;        // startowa pozycja X statku
 unsigned char playerY    = 110;        // startowa pozycja Y statku
 unsigned char level_map = 1;
+unsigned char hud_init_step = 0;
 
 void CheckCottage(void) {
     // Czy gracz ma pierscien I wszedl w obszar chaty
@@ -55,7 +58,7 @@ void CheckMapChange(void) {
         if((playerX > 82) && (playerX  < 106) && (playerY > 230))  level_map = 2;        
     }else if (level_map == 2)
     {
-        if((playerX > 82) && (playerX  < 106) && (playerY <118))  level_map = 1;        
+        if((playerX > 30) && (playerX  < 106) && (playerY <100))  level_map = 1;        
     }
      
 }
@@ -165,6 +168,72 @@ void DrawMap(const unsigned char map[][20]) { // po Y offset 5 kafli w dol bo na
         }
     }
 }  
+
+void DrawMapToBuffer(const unsigned char map[][20],
+                     unsigned char* bmp_buf,
+                     unsigned char* col_buf)
+{
+    unsigned char x, y, cx, cy;
+    unsigned char fg, bg, final_color, orig_color;
+    unsigned int  tile_cell, dest_cell;
+    const unsigned char* data;
+
+    memset(bmp_buf, 0x00, 8000);
+    memset(col_buf, 0x00, 1000);
+
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 20; x++) {
+            unsigned char t = map[y][x];
+
+            // Wybierz wskaźnik na dane kafla
+            data = 0;
+            fg   = C64_GREEN;
+            bg   = C64_BLACK;
+
+            if (t == 1)  { data = tree;         fg = C64_BLACK;     bg = C64_GREEN; }
+            if (t == 2)  { data = tree2;        fg = C64_BLACK;     bg = C64_GREEN; }
+            if (t == 4)  { data = roslina;      fg = C64_GREEN;     bg = C64_BLACK; }
+            if (t == 5)  { data = stone;        fg = C64_LIGHTGRAY; bg = C64_BLACK; }
+            if (t == 6)  { data = tree_left;    fg = C64_GREEN;     bg = C64_BLACK; }
+            if (t == 7)  { data = tree_center;  fg = C64_GREEN;     bg = C64_BLACK; }
+            if (t == 8)  { data = tree_right;   fg = C64_GREEN;     bg = C64_BLACK; }
+            if (t == 9)  { data = tree_up;      fg = C64_GREEN;     bg = C64_BLACK; }
+            if (t == 10) { data = plant_left;   fg = C64_GREEN;     bg = C64_BLACK; }
+            if (t == 11) { data = plant_center; fg = C64_GREEN;     bg = C64_BLACK; }
+            if (t == 12) { data = plant_right;  fg = C64_GREEN;     bg = C64_BLACK; }
+            if (t == 13) { data = plant_up;     fg = C64_GREEN;     bg = C64_BLACK; }
+            if (t == 14) { data = stone_left;   fg = C64_LIGHTGRAY; bg = C64_BLACK; }
+            if (t == 15) { data = stone_center; fg = C64_LIGHTGRAY; bg = C64_BLACK; }
+            if (t == 16) { data = stone_right;  fg = C64_LIGHTGRAY; bg = C64_BLACK; }
+
+            if (data == 0) continue;  // t==0 (puste pole) — pomiń
+
+            // Rysuj kafel 2x2 komórki bezpośrednio do bmp_buf / col_buf
+            // (identyczna logika jak DRAW_TILE, ale zamiast 0x6000/0x4800 → bufory)
+            for (cy = 0; cy < 2; cy++) {
+                if ((y*2 + 5 + cy) >= 25) break;
+                for (cx = 0; cx < 2; cx++) {
+                    if ((x*2 + cx) >= 40) break;
+
+                    tile_cell = (unsigned int)cy * 2 + cx;
+                    dest_cell = (unsigned int)(y*2 + 5 + cy) * 40 + (x*2 + cx);
+
+                    // Piksele → bufor bitmap
+                    memcpy(bmp_buf + dest_cell * 8,
+                           data   + tile_cell * 8, 8);
+
+                    // Kolor → bufor color RAM
+                    orig_color  = *(data + 32 + tile_cell); // 32 = 2*2*8 (offset kolorów)
+                    final_color = ((fg & 0x0F) << 4) | (bg & 0x0F);
+                    *(col_buf + dest_cell) = final_color;
+                }
+            }
+        }
+    }
+}
+
+
+
 // ===============================================================================================================
 //                                                                              MAIN
 // ===============================================================================================================
@@ -176,7 +245,7 @@ int main(void) {
     unsigned char animFrame   = 0;  // 0 lub 1
     unsigned char animTimer   = 0;  // licznik klatek
     unsigned char previousLevel= 1;
-   
+   unsigned char buffered_level = 2;   // co jest w buforze
 	unsigned int joy;
 	clock_t gameClock = clock();    
 	//clrscr();
@@ -191,9 +260,9 @@ int main(void) {
     DRAW_TILE(n03, 8, 0, 4, 4, 2,0 );
     DRAW_TILE(n04, 12, 0, 4, 4, 2,0 );
     DRAW_TILE(n05, 16, 0, 4, 4, 2,0 );
-    DRAW_TILE(n02, 20, 0, 4, 4, 2,0 );
-    DRAW_TILE(n03, 24, 0, 4, 4, 2,0 );
-    DRAW_TILE(n05, 28, 0, 4, 4, 2,0 );
+   // DRAW_TILE(n02, 20, 0, 4, 4, 2,0 );
+   // DRAW_TILE(n03, 24, 0, 4, 4, 2,0 );
+   // DRAW_TILE(n05, 28, 0, 4, 4, 2,0 );
     DrawText("One Ring to rule them all", 6, 7, C64_WHITE, C64_BLACK);    
     DrawText("One Ring to find them", 9, 9, C64_WHITE, C64_BLACK);    
     DrawText("One Ring to bring them all", 6, 11, C64_WHITE, C64_BLACK);    
@@ -206,6 +275,10 @@ int main(void) {
     DrawText("but it slowly kills you", 7, 23, C64_DARKGRAY , C64_BLACK); 
     DrawText("Getting caught means instant death", 2, 24, C64_DARKGRAY , C64_BLACK);   
 
+
+
+
+
     // Czekaj na fire (joystick port 2)
     while (1) 
     {
@@ -215,18 +288,29 @@ int main(void) {
     ////////////////////////////////////////////             LEVELE
     InitHiRes();   
     
+
+
+// === PRZED główną pętlą while(1) ===
+ 
+ DrawMapToBuffer(mapa1, MAP_BUF_BMP, MAP_BUF_COL); // wrzuc mapę 1 do bufora (mapa 1 jest startowa)
+
+ //  skopiuj bufor na ekran — NATYCHMIASTOWE ***
+ memcpy((unsigned char*)0x6000, MAP_BUF_BMP, 8000); //rysuj bitmapę z bufora
+ memcpy((unsigned char*)0x4800, MAP_BUF_COL, 1000); //rysuj coloram z bufora
+
+ DrawMapToBuffer(mapa2, MAP_BUF_BMP, MAP_BUF_COL); // wrzuc mapę 2 do bufora  
+
    //mordor speak language 
     DRAW_TILE(n01, 0, 0, 4, 4, 11,0);
     DRAW_TILE(n02, 4, 0, 4, 4, 11,0 );
     DRAW_TILE(n03, 8, 0, 4, 4, 11,0 );
     DRAW_TILE(n04, 12, 0, 4, 4, 11,0 );
     DRAW_TILE(n05, 16, 0, 4, 4, 11,0 );
-    DRAW_TILE(n02, 20, 0, 4, 4, 11,0 );
-    DRAW_TILE(n03, 24, 0, 4, 4, 11,0 );
-    DRAW_TILE(n05, 28, 0, 4, 4, 11,0 );
+    //DRAW_TILE(n02, 20, 0, 4, 4, 11,0 );
+    //DRAW_TILE(n03, 24, 0, 4, 4, 11,0 );
+    //DRAW_TILE(n05, 28, 0, 4, 4, 11,0 );
 
-     if (level_map==1)  DrawMap(mapa1);   //tu zawsze bedzie Level 1
-     if (level_map==2)  DrawMap(mapa2); 
+     
 
     //HOBBIT cottage
     DRAW_TILE(hobbit_small, 34, 20, 4, 4, 9,0 ); //chata 	
@@ -239,9 +323,52 @@ int main(void) {
     while (1) {
      
      
-        //	LoadMusic("dupa.mus");
-    //   PlayMusic();
-     // Zaladuj muzyke (musi byc w projekcie jako asset)
+    
+
+if(level_map != previousLevel) 
+            {
+                previousLevel = level_map;
+                InitHiRes();
+
+            
+
+            // *** NOWE: skopiuj bufor na ekran — NATYCHMIASTOWE ***
+            memcpy((unsigned char*)0x6000, MAP_BUF_BMP, 8000);
+            memcpy((unsigned char*)0x4800, MAP_BUF_COL, 1000);
+
+            // Wyłącz sprite'y — bezpieczny zapis do Color RAM
+            *((unsigned char*)0xD015) = 0x00;
+// Wgraj mordor-napis i HUD (to jest szybkie, kilka kafli)
+             DRAW_TILE(n01, 0, 0, 4, 4, 11, 0);
+             DRAW_TILE(n02, 4, 0, 4, 4, 11, 0);
+             DRAW_TILE(n03, 8, 0, 4, 4, 11, 0);
+             DRAW_TILE(n04, 12, 0, 4, 4, 11, 0);
+             DRAW_TILE(n05, 16, 0, 4, 4, 11, 0);
+            // DRAW_TILE(n02, 20, 0, 4, 4, 11, 0);
+            // DRAW_TILE(n03, 24, 0, 4, 4, 11, 0);
+            // DRAW_TILE(n05, 28, 0, 4, 4, 11, 0);
+
+            // Włącz sprite'y z powrotem
+            *((unsigned char*)0xD015) = 0x0F;
+
+            if (level_map == 1) 
+            {
+                playerX = 90; playerY = 200;
+                DRAW_TILE(hobbit_small, 34, 20, 4, 4, 9, 0);
+                // Zacznij renderować mapę 2 do bufora (na następne przejście)
+                DrawMapToBuffer(mapa2, MAP_BUF_BMP, MAP_BUF_COL);
+                buffered_level = 2;
+            } else
+             if (level_map == 2) 
+             {
+                playerX = 90; playerY = 120;
+                // Zacznij renderować mapę 1 do bufora
+                DrawMapToBuffer(mapa1, MAP_BUF_BMP, MAP_BUF_COL);
+                buffered_level = 1;
+              }
+                
+         }
+
 	
 		  // Takt czasowy — ruch co 1 tyknięć zegara
         if (clock() > gameClock 	)
@@ -271,20 +398,7 @@ int main(void) {
             CheckMapChange();//player go into specicifc area of map 
 
             if(level_map == 1) CheckCottage(); //hobbit cottage tylko w levelu 1
-            if(level_map != previousLevel) 
-            {
-                previousLevel = level_map;
-                InitHiRes(); //czysc ekran przy zmianie mapy
-                if (level_map==1) { 
-                     DrawMap(mapa1);   //tu zawsze bedzie Level 1
-                     
-                 //HOBBIT cottage
-                 DRAW_TILE(hobbit_small, 34, 20, 4, 4, 9,0 ); //chata 
-                    
-                    }
-                if (level_map==2)  DrawMap(mapa2); 
-                
-            }
+            
             
 
 

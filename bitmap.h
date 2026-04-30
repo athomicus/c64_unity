@@ -1,9 +1,9 @@
-// bitmap.h
 #ifndef BITMAP_H
 #define BITMAP_H
 
+ 
 // Stala: uzyj oryginalnego koloru z danych kafla
-#define TILE_COLOR_AUTO 255
+#define TILE_COLOR_AUTO 0xFF
 
 // Kolory C64 — wygodne stale
 #define C64_BLACK       0
@@ -23,15 +23,14 @@
 #define C64_LIGHTBLUE   14
 #define C64_LIGHTGRAY   15
 
-
 void DRAW_TILE(const unsigned char* data,
                unsigned char dest_cx, unsigned char dest_cy,
                unsigned char cells_w, unsigned char cells_h,
-               unsigned char fg,      unsigned char bg);
+               unsigned char fg, unsigned char bg);
 
 void DRAW_TILE_FLIP_H(const unsigned char* data,
                       unsigned char dest_cx, unsigned char dest_cy,
                       unsigned char cells_w, unsigned char cells_h,
-                      unsigned char fg,      unsigned char bg);
+                      unsigned char fg, unsigned char bg);
 
-#endif/* BITMAP_H */
+#endif

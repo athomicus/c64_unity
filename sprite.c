@@ -3,6 +3,8 @@
 #include <c64.h>
 #include <string.h>
 #include "unity.h"
+// Zastąp memcpy 8-bajtowym unrollem — cc65 to zoptymalizuje do LDA/STA
+
 
 // Mapa Banku 1 ($4000-$7FFF):
 //   $4400-$47E7  Screen RAM (kolory bitmapy)      1000B
