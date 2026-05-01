@@ -21,6 +21,7 @@
 #define COTTAGE_Y2   242
 #define SPEED          2
 #define ANIM_SPEED     9
+ 
 
 #define SPRITE_ENABLE(slot)  *((unsigned char*)0xD015) |=  (1 << (slot))
 #define SPRITE_DISABLE(slot) *((unsigned char*)0xD015) &= ~(1 << (slot))
@@ -52,6 +53,10 @@ unsigned int  shipX         = 320;
 unsigned char shipY         = 120;
 unsigned char previousLevel = 0;
 unsigned char needRestart   = 0;
+
+unsigned int  ring_power     = 200;  /* budżet — maleje gdy trzyma fire */
+unsigned char ringActive     = 0;    /* 1 = pierscien wlaczony teraz */
+unsigned char hudSeg = 0;
 
 static const unsigned int  ring_pos_x[8] = {60, 56, 200, 260, 290, 309, 267, 141};
 static const unsigned char ring_pos_y[8] = {128,200, 180, 120, 120, 167, 112, 146};
@@ -93,17 +98,33 @@ void InitHiRes(void)
    ============================================================ */
 void DrawHUD(void)
 {
+    unsigned char seg;   /* ile segmentow ZOLTYCH (zuzycie) */
+    unsigned char i;
+    unsigned char col;
+
+    /* seg = ile zuzyto — odwrotnosc: 200=0 zoltych, 0=8 zoltych */
+    seg = (unsigned char)((200 - ring_power) / 25);
+
     *((unsigned char*)0xD015) = 0x00;
-    DRAW_TILE(n01,  0, 0, 4, 4, 11, 0);
-    DRAW_TILE(n02,  4, 0, 4, 4, 11, 0);
-    DRAW_TILE(n03,  8, 0, 4, 4, 11, 0);
-    DRAW_TILE(n03, 12, 0, 4, 4, 11, 0);
-    DRAW_TILE(n03, 16, 0, 4, 4, 11, 0);
-    DRAW_TILE(n03, 20, 0, 4, 4, 11, 0);
-    DRAW_TILE(n03, 24, 0, 4, 4, 11, 0);
-    DRAW_TILE(n03, 28, 0, 4, 4, 11, 0);
+
+    for (i = 0; i < 8; i++) {
+        if (i < seg)
+            col = 7;    /* ZOLTY — zuzyty segment */
+        else
+            col = 11;   /* SZARY — wolny segment */
+
+        switch(i) {
+            case 0: DRAW_TILE(n01,  0, 0, 4, 4, col, 0); break;
+            case 1: DRAW_TILE(n02,  4, 0, 4, 4, col, 0); break;
+            default: DRAW_TILE(n03, i*4, 0, 4, 4, col, 0); break;
+        }
+    }
+
     *((unsigned char*)0xD015) = 0x0F;
 }
+
+    
+ 
 
 /* ============================================================
    BUFOR MAPY — BuildMap
@@ -341,7 +362,7 @@ int main(void)
     previousLevel = 0;
 
     SPRITE(0, spritePlayer, playerX, playerY, 1);
-    SPRITE(1, spriteEnemy,  shipX,   shipY,   2);
+    SPRITE(1, spriteEnemyLeft,  shipX,   shipY,   2);
     SpawnRing();
 
     gameClock = clock();
@@ -399,6 +420,8 @@ int main(void)
             previousLevel = 0;     /* wymusi redraw mapy */
             animFrame     = 0;
             animTimer     = 0;
+           ring_power  = 200;
+            ringActive  = 0;
 
             /* wyczysc rejestry kolizji */
             dummy = *((unsigned char*)0xD01E);
@@ -469,10 +492,12 @@ int main(void)
             CheckMapChange();
             if (level_map == 1) CheckCottage();
 
-            /* ruch wroga */
+            /* ruch wroga — zatrzymaj gdy pierscien aktywny */
+            if (!ringActive) {
             if (shipX > 24) shipX -= 1;
-            else            shipX  = 320;
+             else            shipX  = 320;
             SPRITE_MOVE(1, shipX, shipY);
+            }
 
             /* sterowanie */
             joy = ~GetJoy(0);
@@ -525,8 +550,35 @@ int main(void)
                     if (player_steps >= 18) { distance++; player_steps = 0; }
                 }
             }
+      
+            /* --- licznik trzymania fire --- */
+       /* --- pierscien (fire) --- */
+if (joy & JOY_BTN1) {
+    if (ring_power > 0) {
+        ring_power--;
+        ringActive = 1;
+        //SPRITE_DISABLE(0);
 
-            SPRITE_MOVE(0, playerX, playerY);
+        /* odswież HUD tylko gdy seg sie zmienil (co 25 taktow) */
+        {
+            unsigned char newSeg = (unsigned char)((200 - ring_power) / 25);
+            if (newSeg != hudSeg) {
+                hudSeg = newSeg;
+                DrawHUD();
+            }
+        }
+    } else {
+        needRestart = 1;
+    }
+} else {
+    if (ringActive) {
+        ringActive = 0;
+       //SPRITE_ENABLE(0);
+        DrawHUD();   /* przywroc normalny wyglad po zwolnieniu */
+    }
+}
+      
+        SPRITE_MOVE(0, playerX, playerY);
         }
     }
 
