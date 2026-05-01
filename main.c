@@ -19,7 +19,7 @@
 #define COTTAGE_Y1  210
 #define COTTAGE_X2  312
 #define COTTAGE_Y2  242
-#define SPEED         3
+#define SPEED         2
 #define ANIM_SPEED    9
 
 #define SPRITE_ENABLE(slot)  *((unsigned char*)0xD015) |=  (1 << (slot))
@@ -29,7 +29,13 @@
    BUFOR MAPY — wypelniany przez BuildMap lub kopie mapa1
    ============================================================ */
 static unsigned char current_map[10][20];
-
+/* ============================================================
+   FORWARD DECLARATIONS
+   ============================================================ */
+void LoadAndDrawMap(unsigned char prevLevel);
+void SpawnRing(void);
+void GameOver(void);
+void RestartGame(void);
 void BuildMap(const unsigned char patch[][3])
 {
     unsigned char i, r, c;
@@ -44,10 +50,18 @@ void BuildMap(const unsigned char patch[][3])
    ZMIENNE GLOBALNE
    ============================================================ */
 unsigned int  points        = 0;
+unsigned char player_steps = 0;
+unsigned int distance = 0;
 unsigned char ringCollected = 0;
 unsigned int  playerX       = 100;
 unsigned char playerY       = 110;
 unsigned char level_map     = 1;
+unsigned int  joy;
+unsigned int  shipX         = 280;
+unsigned char shipY         = 120;
+unsigned char previousLevel = 0;
+unsigned char gameOverActive = 0;  /* globalna flaga */
+  
 
 static const unsigned int  ring_pos_x[8] = {60, 56, 200, 260, 290, 309, 267, 141};
 static const unsigned char ring_pos_y[8] = {128,200, 180, 120, 120, 167, 112, 146};
@@ -100,6 +114,101 @@ void InitHiRes(void)
     VIC.ctrl2 &= ~0x10;
     VIC.addr   =  0x28;
 }
+void RestartGame(void)
+{
+    unsigned int i;
+     volatile unsigned char dummy;
+     previousLevel = 0; 
+     
+
+     shipX         = 280;
+  shipY         = 120;
+    points        = 0;
+    player_steps  = 0;
+    distance      = 0;
+    ringCollected = 0;
+    level_map     = 1;
+    playerX       = 100;
+    playerY       = 110;
+    first_spawn   = 1;   /* kolejny pierscien zacznie od pozycji 0 na mapie 1 */
+
+    /* reset wroga */
+    /* shipX i shipY sa lokalne w main() wiec ich nie mozemy tu resetowac */
+    /* uzyj globalnych zmiennych jesli chcesz resetowac wroga */
+
+    /* reinicjalizacja grafiki */
+    
+
+    InitHiRes();
+     SPRITE_DISABLE(0);
+
+    SPRITE_DISABLE(1);
+    SPRITE_DISABLE(2);
+    SPRITE_DISABLE(3);
+      /* KLUCZOWE — wyczyść stary stan kolizji przez odczyt */
+    dummy = *((unsigned char*)0xD01E);
+    dummy = *((unsigned char*)0xD01F);
+    (void)dummy;
+ /* zaladuj mape 1 */
+    LoadAndDrawMap(0);
+    DrawHUD();
+    DrawNumber(points, 33, 2, C64_WHITE, C64_BLACK);
+  /* sprite'y */
+    
+       for (i = 0; i < 10000; i++) { /* ~0.5 sekundy na C64 */ }
+       shipX=280;shipY=120;
+    //SPRITE(1, spriteEnemy,  shipX, shipY, 2);
+    //SPRITE(2, spriteOrc,     50,  50, 5);
+
+    SpawnRing();
+    
+ /* czekaj kilka ramek zanim odblokujesz kolizje */
+    for (i = 0; i < 10000; i++) {}
+    dummy = *((unsigned char*)0xD01E);   /* wyczysc raz jeszcze po spawnie */
+    (void)dummy;
+
+   // SPRITE(0, spritePlayer, playerX, playerY, 1);
+    gameOverActive = 0;     /* teraz mozna znowu wykrywac kolizje */
+}
+ void GameOver(void)
+ {
+    unsigned int  total = 0,i;
+
+    InitRandom();
+    InitHiRes();
+    SPRITE_DISABLE(0);
+    SPRITE_DISABLE(1);
+    SPRITE_DISABLE(2);
+    SPRITE_DISABLE(3);
+      SPRITE_DISABLE(5);
+    
+
+    POKE(0xD020, 0);
+    POKE(0xD021, 0);
+    DrawText("GAME OVER", 14,  6, C64_WHITE,    C64_BLACK);
+    DrawText("SCORE", 10,  12, C64_WHITE,    C64_BLACK);
+    DrawText("DISTANCE", 10, 13, C64_WHITE,    C64_BLACK);
+    DrawText("TOTAL SCORE",10, 14, C64_WHITE,    C64_BLACK);
+    
+    DrawNumber(points,   24,  12, C64_WHITE,  C64_BLACK);   
+    DrawNumber(distance,  24,  13, C64_WHITE,  C64_BLACK);   
+    total = points + distance;
+    DrawNumber(total,  24,  14, C64_WHITE,  C64_BLACK);  
+      
+    /* KROK 1: czekaj az gracz PUŚCI fire (jesli trzyma z poprzedniej gry) */
+    while (1) {
+        joy = ~GetJoy(0);
+        if (!(joy & JOY_BTN1)) break;   /* czekaj na zwolnienie */
+    }
+     /* KROK 2: maly delay zeby joystick sie "ustatkowal" */
+    for (i = 0; i < 30000; i++) { /* ~0.5 sekundy na C64 */ }
+     /* KROK 3: teraz czekaj na swiadome wcisnięcie */
+    while (1) {
+        joy = ~GetJoy(0);
+        if (joy & JOY_BTN1) break;
+    } 
+RestartGame(); 
+}
 
 /* ============================================================
    RYSOWANIE MAPY
@@ -137,13 +246,17 @@ void DrawMap(void)
 void SpawnRing(void)
 {
     if (first_spawn) {
-        ring_map    = 1;
+        ring_map  = 1;           /* pierwszy pierscien zawsze na mapie 1 */
+        ring_slot = 0;           /* konkretna pozycja, nie losowa */
         first_spawn = 0;
     } else {
-        ring_map = (GetRandom() & 0x01) + 1;
+        /* losuj mape 1-4 */
+        ring_map = (GetRandom() & 0x03) + 1;  /* 0-3 + 1 = mapy 1,2,3,4 */
+        /* losuj pozycje 0-7 */
+        ring_slot = GetRandom() & 0x07;
     }
-    ring_slot = GetRandom() & 0x07;
 
+    /* pokaz sprite tylko jesli pierscien jest na aktualnej mapie */
     if (ring_map == level_map) {
         SPRITE(3, ring1, ring_pos_x[ring_slot], ring_pos_y[ring_slot], C64_LIGHTBLUE);
         *((unsigned char*)0xD015) |= 0x08;
@@ -151,7 +264,6 @@ void SpawnRing(void)
         SPRITE_DISABLE(3);
     }
 }
-
 /* ============================================================
    KOLIZJA Z CHATKA HOBBITA
    ============================================================ */
@@ -201,6 +313,20 @@ void CheckMapChange(void)
 void CheckSpriteCollisions(void)
 {
     unsigned char col = *((unsigned char*)0xD01E);
+    if (gameOverActive) {
+         /* wyczysc rejestr ZAWSZE - nawet gdy nieaktywny */
+       // col = *((unsigned char*)0xD01E);
+       // col = *((unsigned char*)0xD01F);
+       // (void)col;
+        return;   /* ignoruj kolizje podczas restartu */
+    }
+    
+    //adres w pamięci — rejestr VIC kolizji sprite-sprite
+    //rzutowanie liczby na WSKAŹNIK do bajtu
+// wyłuskanie — ODCZYTAJ bajt spod tego adresu
+// zapisz wynik do zmiennej col 
+   // col = *((unsigned char*)0xD01E); 
+     
     if ((col & 0x01) && (col & 0x08)) {
         if (!ringCollected) {
             points += 10;
@@ -209,6 +335,14 @@ void CheckSpriteCollisions(void)
             ringCollected = 1;
             SFX_Play(SFX_RING);
         }
+    }
+
+    if ((col & 0x01) && (col & 0x02)) 
+    {
+        gameOverActive = 1;    /* zablokuj kolejne kolizje */
+        shipX=280;
+        shipY=120;
+        GameOver();
     }
 }
 
@@ -269,19 +403,18 @@ void LoadAndDrawMap(unsigned char prevLevel)
     }
 }
 
+
 /* ============================================================
    MAIN
    ============================================================ */
 int main(void)
 {
-    unsigned int  shipX         = 280;
-    unsigned char shipY         = 120;
+   
     unsigned int  newX;
     signed int    newY;
     unsigned char animFrame     = 0;
     unsigned char animTimer     = 0;
-   unsigned char previousLevel = 0;
-    unsigned int  joy;
+   
     unsigned char oldLevel;
     clock_t       gameClock;
 
@@ -326,8 +459,8 @@ int main(void)
     playerY   = 110;
 
     SPRITE(0, spritePlayer, playerX, playerY, 1);
-    SPRITE(1, spriteEnemy,  120, 80, 2);
-    SPRITE(2, spriteOrc,     50, 50, 5);
+    SPRITE(1, spriteEnemy,  shipX, shipY, 2);
+    //SPRITE(2, spriteOrc,     50, 50, 5);
 
     SpawnRing();
 
@@ -336,16 +469,20 @@ int main(void)
     /* --------------------------------------------------------
        PETLA GLOWNA
        -------------------------------------------------------- */
-    while (1) {
+    while (1) 
+    {
 
         SFX_Update();
 
         /* --- zmiana levelu --- */
-        if (level_map != previousLevel) {
+        if (level_map != previousLevel)
+        {
            oldLevel = previousLevel;
             previousLevel = level_map;
 
-            *((unsigned char*)0xD015) = 0x00;
+            *((unsigned char*)0xD015) = 0x00;   /* wszystkie sprite'y off */
+             POKE(0xD006, 0);                    /* przesuń sprite 3 poza ekran */
+             POKE(0xD007, 0);                    /* Y=0 — poza obszarem gry */
             InitHiRes();
 
             LoadAndDrawMap(oldLevel);     /* <-- buduje current_map + rysuje */
@@ -355,10 +492,12 @@ int main(void)
             SPRITE(0, spritePlayer, playerX, playerY, 1);
             SPRITE_MOVE(1, shipX, shipY);
 
-            if (!ringCollected && ring_map == level_map) {
+            if (!ringCollected && ring_map == level_map)
+            {
                 SPRITE(3, ring1, ring_pos_x[ring_slot], ring_pos_y[ring_slot], C64_LIGHTBLUE);
                 *((unsigned char*)0xD015) = 0x0F;
-            } else {
+            } else
+            {
                 *((unsigned char*)0xD015) = 0x07;
             }
 
@@ -366,12 +505,14 @@ int main(void)
         }
 
         /* --- takt czasowy --- */
-        if (clock() > gameClock) {
+        if (clock() > gameClock)
+        {
             gameClock = clock();
 
             /* animacja pierscienia */
             animTimer++;
-            if (animTimer >= ANIM_SPEED && !ringCollected && ring_map == level_map) {
+            if (animTimer >= ANIM_SPEED && !ringCollected && ring_map == level_map)
+            {
                 animTimer = 0;
                 animFrame ^= 1;
                 if (animFrame == 0)
@@ -396,35 +537,49 @@ int main(void)
                 newX = playerX;
                 newY = (signed int)playerY - SPEED;
                 if (playerY > 90 &&
-                    CanWalk(newX + HB_L, (unsigned int)newY + HB_T) &&
-                    CanWalk(newX + HB_R, (unsigned int)newY + HB_T))
-                    playerY = (unsigned char)newY;
+                    CanWalk(newX + HB_L, (unsigned int)newY + HB_T) &&   CanWalk(newX + HB_R, (unsigned int)newY + HB_T))
+                    {
+                        playerY = (unsigned char)newY;
+                        player_steps++; if (player_steps >18) {distance++;player_steps=0;}
+                    }
             }
+           
             if (joy & JOY_DOWN) {
                 newX = playerX;
                 newY = (signed int)playerY + SPEED;
-                if (CanWalk(newX + HB_L, (unsigned int)newY + HB_B) &&
-                    CanWalk(newX + HB_R, (unsigned int)newY + HB_B))
+                if (CanWalk(newX + HB_L, (unsigned int)newY + HB_B) &&   CanWalk(newX + HB_R, (unsigned int)newY + HB_B))
+                {
                     playerY = (unsigned char)newY;
+                    player_steps++; if (player_steps >18) {distance++;player_steps=0;}
+                }
             }
-            if (joy & JOY_LEFT) {
+           
+            if (joy & JOY_LEFT)
+            {
                 newX = playerX - SPEED;
                 newY = playerY;
-                if (CanWalk(newX + HB_L, (unsigned int)newY + HB_T) &&
-                    CanWalk(newX + HB_L, (unsigned int)newY + HB_B))
-                    playerX = newX;
+                if (CanWalk(newX + HB_L, (unsigned int)newY + HB_T) &&  CanWalk(newX + HB_L, (unsigned int)newY + HB_B))
+                {
+                   playerX = newX;  
+                   player_steps++; if (player_steps >18) {distance++;player_steps=0;}
+                }  
             }
-            if (joy & JOY_RIGHT) {
+           
+            if (joy & JOY_RIGHT)
+            {
                 newX = playerX + SPEED;
                 newY = playerY;
-                if (CanWalk(newX + HB_R, (unsigned int)newY + HB_T) &&
-                    CanWalk(newX + HB_R, (unsigned int)newY + HB_B))
-                    playerX = newX;
+                if (CanWalk(newX + HB_R, (unsigned int)newY + HB_T) && CanWalk(newX + HB_R, (unsigned int)newY + HB_B))
+                    {
+                      player_steps++; if (player_steps >18) {distance++;player_steps=0;}
+                      playerX = newX;
+                    }
+                    
             }
 
             SPRITE_MOVE(0, playerX, playerY);
-            DrawNumber(playerX,      0,  0, C64_WHITE,  C64_BLACK);   // X sprite
-            DrawNumber(playerY,      5,  0, C64_YELLOW, C64_BLACK);   // Y sprite
+          //  DrawNumber(playerX,      0,  0, C64_WHITE,  C64_BLACK);   // X sprite
+          //  DrawNumber(playerY,      5,  0, C64_YELLOW, C64_BLACK);   // Y sprite
         }
     }
 
