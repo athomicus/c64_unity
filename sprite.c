@@ -18,28 +18,21 @@ void SPRITE(unsigned char n, unsigned char *data, unsigned int x, unsigned char 
     unsigned char i;
     unsigned char mask = (1 << n);
 
-    // Sprite data na początku banku — z dala od screen RAM ($4800)
-    // Sprite 0: $4000, Sprite 1: $4040, ..., Sprite 7: $41C0
-    unsigned int spriteBase = 0x4000 + (n * 64);
+    // Sprite data pod $4C00 — bezpiecznie poza programem i screen RAM
+    unsigned int spriteBase = 0x4C00 + (n * 64);
     for (i = 0; i < 64; i++)
         POKE(spriteBase + i, data[i]);
 
-    // Pointer = (spriteBase - bank_start) / 64
-    // ($4000 - $4000) / 64 = 0
-    // Sprite 0 = 0, Sprite 1 = 1, ..., Sprite 7 = 7
-    POKE(0x4BF8 + n, n);  // ← był 0x47F8 + n, 32 + n
+    // Pointer: ($4C00 - $4000) / 64 = 48
+    POKE(0x4BF8 + n, 48 + n);
 
-    // Hi-res: wyzeruj bit N w rejestrze multicolor
     POKE(0xD01C, PEEK(0xD01C) & ~mask);
-
     POKE(0xD027 + n, color);
     POKE(0xD000 + (n * 2), (unsigned char)x);
     POKE(0xD001 + (n * 2), y);
 
-    if (x > 255)
-        POKE(0xD010, PEEK(0xD010) |  mask);
-    else
-        POKE(0xD010, PEEK(0xD010) & ~mask);
+    if (x > 255) POKE(0xD010, PEEK(0xD010) |  mask);
+    else         POKE(0xD010, PEEK(0xD010) & ~mask);
 
     POKE(0xD015, PEEK(0xD015) | mask);
 }
