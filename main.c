@@ -21,7 +21,8 @@
 #define COTTAGE_Y2   242
 #define SPEED          2
 #define ANIM_SPEED     9
- 
+
+#define ORC_ANIM_SPEED  8   // im mniejsza liczba, tym szybsza animacja
 
 #define SPRITE_ENABLE(slot)  *((unsigned char*)0xD015) |=  (1 << (slot))
 #define SPRITE_DISABLE(slot) *((unsigned char*)0xD015) &= ~(1 << (slot))
@@ -49,14 +50,16 @@ unsigned int  playerX       = 100;
 unsigned char playerY       = 110;
 unsigned char level_map     = 1;
 unsigned int  joy;
-unsigned int  shipX         = 320;
-unsigned char shipY         = 120;
+unsigned int  nasgul1X         = 320;
+unsigned char nasgul1Y         = 120;
 unsigned char previousLevel = 0;
 unsigned char needRestart   = 0;
-
+unsigned char nasgul1Dir = 0;
 unsigned int  ring_power     = 200;  /* budżet — maleje gdy trzyma fire */
 unsigned char ringActive     = 0;    /* 1 = pierscien wlaczony teraz */
 unsigned char hudSeg = 0;
+ unsigned char orcAnimFrame = 0;
+unsigned char orcAnimTimer = 0;
 
 static const unsigned int  ring_pos_x[8] = {60, 56, 200, 260, 290, 309, 267, 141};
 static const unsigned char ring_pos_y[8] = {128,200, 180, 120, 120, 167, 112, 146};
@@ -357,12 +360,12 @@ int main(void)
     level_map     = 1;
     playerX       = 100;
     playerY       = 110;
-    shipX         = 320;
-    shipY         = 120;
+    nasgul1X         = 320;
+    nasgul1Y         = 120;
     previousLevel = 0;
 
     SPRITE(0, spritePlayer, playerX, playerY, 1);
-    SPRITE(1, spriteEnemyLeft,  shipX,   shipY,   2);
+    SPRITE(1, spriteEnemyLeft,  nasgul1X,   nasgul1Y,   2);
     SpawnRing();
 
     gameClock = clock();
@@ -407,6 +410,7 @@ int main(void)
             while (1) { joy = ~GetJoy(0); if (joy & JOY_BTN1) break; }
 
             /* reset wszystkich zmiennych */
+            nasgul1Dir = 0;
             points        = 0;
             player_steps  = 0;
             distance      = 0;
@@ -415,12 +419,12 @@ int main(void)
             playerX       = 100;
             playerY       = 110;
             first_spawn   = 1;
-            shipX         = 320;   /* daleko od gracza */
-            shipY         = 120;
+            nasgul1X         = 320;   /* daleko od gracza */
+            nasgul1Y         = 120;
             previousLevel = 0;     /* wymusi redraw mapy */
             animFrame     = 0;
             animTimer     = 0;
-           ring_power  = 200;
+            ring_power  = 200;
             ringActive  = 0;
 
             /* wyczysc rejestry kolizji */
@@ -456,7 +460,7 @@ int main(void)
             DrawHUD();
 
             SPRITE(0, spritePlayer, playerX, playerY, 1);
-            SPRITE_MOVE(1, shipX, shipY);
+            SPRITE_MOVE(1, nasgul1X, nasgul1Y);
 
             if (!ringCollected && ring_map == level_map) {
                 SPRITE(3, ring1, ring_pos_x[ring_slot], ring_pos_y[ring_slot], C64_LIGHTBLUE);
@@ -492,12 +496,60 @@ int main(void)
             CheckMapChange();
             if (level_map == 1) CheckCottage();
 
-            /* ruch wroga — zatrzymaj gdy pierscien aktywny */
-            if (!ringActive) {
-            if (shipX > 24) shipX -= 1;
-             else            shipX  = 320;
-            SPRITE_MOVE(1, shipX, shipY);
-            }
+            /////////////////////////////////////////////////////////////////////////////////////////////////
+            /*                      ruch wroga — zatrzymaj gdy pierscien aktywny */
+            /////////////////////////////////////////////////////////////////////////////////////////////////
+            
+if (!ringActive)  //POTWORY ATAKUJA
+{
+    unsigned char prevDir = nasgul1Dir;
+
+    if (nasgul1Dir == 0) {
+        if (nasgul1X > 24)  nasgul1X -= 1;
+        else                nasgul1Dir = 1;
+    } else {
+        if (nasgul1X < 320) nasgul1X += 1;
+        else                nasgul1Dir = 0;
+    }
+
+    /* zmien grafike TYLKO gdy zmienil sie kierunek */
+    if (nasgul1Dir != prevDir) {
+        if (nasgul1Dir == 0)
+            SPRITE(1, spriteEnemyLeft, nasgul1X, nasgul1Y, 2);
+        else
+            SPRITE(1, spriteEnemy,     nasgul1X, nasgul1Y, 2);
+    }
+
+    SPRITE_MOVE(1, nasgul1X, nasgul1Y);
+
+    // --- animacja orców ---
+    orcAnimTimer++;
+if (orcAnimTimer >= ORC_ANIM_SPEED) {
+    orcAnimTimer = 0;
+    orcAnimFrame++;
+    if (orcAnimFrame >= 3) orcAnimFrame = 0;  // reset po klatce 2
+}
+    
+   // wyświetl odpowiednią klatkę
+switch (orcAnimFrame) {
+    case 0:
+        SPRITE(4, spriteOrc_1, 130, 130, 4);
+        
+        
+        break;
+    case 1:
+        SPRITE(4, spriteOrc_2, 130, 130, 4);
+        
+        
+        break;
+    case 2:
+        
+        
+        SPRITE(4, spriteOrc_3, 130, 130, 4);
+        break;
+}
+
+}
 
             /* sterowanie */
             joy = ~GetJoy(0);
