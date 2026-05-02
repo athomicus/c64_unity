@@ -527,26 +527,26 @@ if (!ringActive)  //POTWORY ATAKUJA
 if (orcAnimTimer >= ORC_ANIM_SPEED) {
     orcAnimTimer = 0;
     orcAnimFrame++;
-    if (orcAnimFrame >= 3) orcAnimFrame = 0;  // reset po klatce 2
+    if (orcAnimFrame >= 2) orcAnimFrame = 0;  // reset po klatce 2
 }
     
    // wyświetl odpowiednią klatkę
 switch (orcAnimFrame) {
     case 0:
-        SPRITE(4, spriteOrc_1, 130, 130, 4);
+        SPRITE(4, spriteOrc_1, 130, 130, 13);
         
         
         break;
     case 1:
-        SPRITE(4, spriteOrc_2, 130, 130, 4);
+        SPRITE(4, spriteOrc_2, 130, 130, 13);
         
         
         break;
-    case 2:
+    //case 2:
         
         
-        SPRITE(4, spriteOrc_3, 130, 130, 4);
-        break;
+      //  SPRITE(4, spriteOrc_3, 130, 130, 4);
+      //  break;
 }
 
 }
