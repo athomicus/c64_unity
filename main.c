@@ -21,6 +21,7 @@
 #define COTTAGE_Y2   242
 #define SPEED          2
 #define ANIM_SPEED     9
+ 
 
 #define ORC_ANIM_SPEED  8   // im mniejsza liczba, tym szybsza animacja
 
@@ -63,6 +64,7 @@ unsigned char orc3Y         = 200;
 unsigned int  orc4X         = 280;
 unsigned char orc4Y         = 200;
 
+       
 
 
 unsigned int  nasgul1X         = 320;
@@ -73,7 +75,7 @@ unsigned char nasgul1Dir = 0;
 unsigned int  ring_power     = 200;  /* budżet — maleje gdy trzyma fire */
 unsigned char ringActive     = 0;    /* 1 = pierscien wlaczony teraz */
 unsigned char hudSeg = 0;
- unsigned char orcAnimFrame = 0;
+// unsigned char orcAnimFrame = 0;
 unsigned char orcAnimTimer = 0;
 
 static const unsigned int  ring_pos_x[8] = {60, 56, 200, 260, 290, 309, 267, 141};
@@ -82,6 +84,9 @@ static const unsigned char ring_pos_y[8] = {128,200, 180, 120, 120, 167, 112, 14
 unsigned char ring_slot  = 0;
 unsigned char ring_map   = 1;
 unsigned char first_spawn = 1;
+
+
+
 
 /* ============================================================
    LOSOWOŚĆ (SID $D41B)
@@ -111,26 +116,74 @@ void InitHiRes(void)
     VIC.addr   =  0x28;
 }
 
+/*
+
+unsigned int AbsDiff(unsigned int a, unsigned int b)
+{
+       if (a > b) return a - b;
+       return b - a;
+}
+
+
+ */
+ 
+
+//unsigned int AbsDistance(unsigned int a, unsigned int b)//
+//{
+ //      if (a > b) return a - b;
+ //      return b - a;
+//}
+void MoveOrcs(void)
+{
+   // unsigned char rand6 = GetRandom() % 6;
+        
+        
+       /* ścigaj gracza */
+    if (playerX > orc1X) orc1X++; else orc1X--;
+    if (playerY > orc1Y) orc1Y++; else orc1Y--;
+    if (playerX > orc2X) orc2X++; else orc2X--;
+    if (playerY > orc2Y) orc2Y++; else orc2Y--;
+    if (playerX > orc3X) orc3X++; else orc3X--;
+    if (playerY > orc3Y) orc3Y++; else orc3Y--;
+    if (playerX > orc4X) orc4X++; else orc4X--;
+    if (playerY > orc4Y) orc4Y++; else orc4Y--;
+
+    /* unikaj się nawzajem */
+    //if (orc1X > orc2X && (orc1X - orc2X) < 20) { orc1X += 5; orc2X -= 5; }
+    //if (orc1X < orc2X && (orc2X - orc1X) < 20) { orc1X -= 5; orc2X += 5; }
+
+    //if (orc3X > orc2X && (orc3X - orc2X) < 20) { orc3X += 5; orc2X -= 5; }
+    //if (orc3X < orc2X && (orc2X - orc3X) < 20) { orc3X -= 5; orc2X += 5; }
+
+//if (orc1X > orc3X && (orc1X - orc3X) < 20) { orc1X += 5; orc3X -= 5; }
+ //   if (orc1X < orc3X && (orc3X - orc1X) < 20) { orc1X -= 5; orc3X += 5; }
+
+    //if (orc1X > orc4X && (orc1X - orc4X) < 20) { orc1X += 5; orc4X -= 5; }
+    //if (orc1X < orc4X && (orc4X - orc1X) < 20) { orc1X -= 5; orc4X += 5; }
+
+}
+
+
+  
+
+
 /* ============================================================
    HUD
    ============================================================ */
 void DrawHUD(void)
 {
-    unsigned char seg;   /* ile segmentow ZOLTYCH (zuzycie) */
+    unsigned char seg;
     unsigned char i;
     unsigned char col;
+    unsigned char d015_save;  // ← dodaj
 
-    /* seg = ile zuzyto — odwrotnosc: 200=0 zoltych, 0=8 zoltych */
     seg = (unsigned char)((200 - ring_power) / 25);
 
+    d015_save = *((unsigned char*)0xD015);  // ← zapamiętaj stan
     *((unsigned char*)0xD015) = 0x00;
 
     for (i = 0; i < 8; i++) {
-        if (i < seg)
-            col = 7;    /* ZOLTY — zuzyty segment */
-        else
-            col = 11;   /* SZARY — wolny segment */
-
+        col = (i < seg) ? 7 : 11;
         switch(i) {
             case 0: DRAW_TILE(n01,  0, 0, 4, 4, col, 0); break;
             case 1: DRAW_TILE(n02,  4, 0, 4, 4, col, 0); break;
@@ -138,7 +191,7 @@ void DrawHUD(void)
         }
     }
 
-    *((unsigned char*)0xD015) = 0x0F;
+    *((unsigned char*)0xD015) = d015_save;  // ← przywróć zamiast 0x0F
 }
 
     
@@ -329,11 +382,16 @@ unsigned char CanWalk(unsigned int px, unsigned int py)
    ============================================================ */
 int main(void)
 {
+    unsigned char newSeg ;
+    unsigned char prevDir; 
     unsigned int   newX;
     signed int     newY;
     unsigned char  animFrame     = 0;
     unsigned char  animTimer     = 0;
     unsigned char  oldLevel;
+    unsigned int  total;
+     unsigned int  i;
+    volatile unsigned char dummy;
     clock_t        gameClock;
 
     /* --- INIT --- */
@@ -395,9 +453,7 @@ int main(void)
            -------------------------------------------------- */
         if (needRestart)
         {
-            unsigned int  total;
-            unsigned int  i;
-            volatile unsigned char dummy;
+            
 
             needRestart = 0;
 
@@ -481,18 +537,26 @@ int main(void)
 
             LoadAndDrawMap(oldLevel);
             DrawHUD();
+            DrawNumber(points, 33, 2, C64_WHITE, C64_BLACK);
 
             SPRITE(0, spritePlayer, playerX, playerY, 1);
             SPRITE_MOVE(1, nasgul1X, nasgul1Y);
+            if ((level_map==3) || (level_map==2) || (level_map==4)) 
+            {
+              SPRITE(4, sprite1Orc, orc1X, orc1Y, 13);  
+              SPRITE(5, sprite1Orc, orc2X, orc2Y, 13);  
+              SPRITE(6, sprite1Orc, orc3X, orc3Y, 13); 
+              SPRITE(7, sprite1Orc, orc4X, orc4Y, 13); 
+            }
+        
 
             if (!ringCollected && ring_map == level_map) {
                 SPRITE(3, ring1, ring_pos_x[ring_slot], ring_pos_y[ring_slot], C64_LIGHTBLUE);
-                *((unsigned char*)0xD015) = 0x0F;
+               *((unsigned char*)0xD015) |= 0x0F;
             } else {
-                *((unsigned char*)0xD015) = 0x07;
+               *((unsigned char*)0xD015) |= 0x07;
             }
-
-            DrawNumber(points, 33, 2, C64_WHITE, C64_BLACK);
+            
         }
 
         /* --------------------------------------------------
@@ -525,7 +589,7 @@ int main(void)
             
 if (!ringActive)  //POTWORY ATAKUJA
 {
-    unsigned char prevDir = nasgul1Dir;
+     prevDir = nasgul1Dir;
 
     if (nasgul1Dir == 0) {
         if (nasgul1X > 24)  nasgul1X -= 1;
@@ -550,48 +614,19 @@ if (!ringActive)  //POTWORY ATAKUJA
 
 if ((level_map==3) || (level_map==2) || (level_map==4)) 
     {
-        
-        //chase player
-        
-         if(playerX > orc1X ) orc1X++; else orc1X--;
-         if(playerY > orc1Y ) orc1Y++; else orc1Y--;
-         
-         if(playerX > orc2X ) orc2X++; else orc2X--;
-         if(playerY > orc2Y ) orc2Y++; else orc2Y--;
-          if(playerX > orc3X ) orc3X++; else orc3X--;
-         if(playerY > orc3Y ) orc3Y++; else orc3Y--;
-
-          if(playerX > orc4X ) orc4X++; else orc4X--;
-         if(playerY > orc4Y ) orc4Y++; else orc4Y--;
-      
-        // --- animacja orcow ---
         orcAnimTimer++;
-     if (orcAnimTimer >= ORC_ANIM_SPEED) 
-     {
+        //chase player
+        if(orcAnimTimer >= 2)
+        {
+          MoveOrcs();
         orcAnimTimer = 0;
-        orcAnimFrame++;
-        if (orcAnimFrame >= 2) orcAnimFrame = 0;  // reset po klatce 2
-        
-      }
+        }   
+    SPRITE_MOVE(4, orc1X, orc1Y);
+    SPRITE_MOVE(5, orc2X, orc2Y);
+    SPRITE_MOVE(6, orc3X, orc3Y);
+    SPRITE_MOVE(7, orc4X, orc4Y);
+            
     
-    // wyświetl odpowiednią klatkę
-    switch (orcAnimFrame) 
-    {
-        case 0:
-            SPRITE(4, spriteOrc_1, orc1X, orc1Y, 13);  
-         //   SPRITE(5, spriteOrc_1, orc2X, orc2Y, 13);  
-          //  SPRITE(6, spriteOrc_1, orc3X, orc3Y, 13); 
-         //   SPRITE(7, spriteOrc_1, orc4X, orc4Y, 13);  break;
-        case 1:
-            SPRITE(4, spriteOrc_2, orc1X, orc1Y, 13);  
-         //  SPRITE(5, spriteOrc_2, orc2X, orc2Y, 13);  
-           // SPRITE(6, spriteOrc_2, orc3X, orc3Y, 13); 
-            //SPRITE(7, spriteOrc_2, orc4X, orc4Y, 13);  break;
-            //case 2:     
-        
-      //  SPRITE(4, spriteOrc_3, 130, 130, 4);
-      //  break;
-    }
    }
 
 }
@@ -658,7 +693,7 @@ if (joy & JOY_BTN1) {
 
         /* odswież HUD tylko gdy seg sie zmienil (co 25 taktow) */
         {
-            unsigned char newSeg = (unsigned char)((200 - ring_power) / 25);
+            newSeg = (unsigned char)((200 - ring_power) / 25);
             if (newSeg != hudSeg) {
                 hudSeg = newSeg;
                 DrawHUD();
