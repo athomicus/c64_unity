@@ -50,6 +50,21 @@ unsigned int  playerX       = 100;
 unsigned char playerY       = 110;
 unsigned char level_map     = 1;
 unsigned int  joy;
+
+unsigned int  orc1X         = 30;
+unsigned char orc1Y         = 80;
+
+unsigned int  orc2X         = 280;
+unsigned char orc2Y         = 80;
+
+unsigned int  orc3X         = 40;
+unsigned char orc3Y         = 200;
+
+unsigned int  orc4X         = 280;
+unsigned char orc4Y         = 200;
+
+
+
 unsigned int  nasgul1X         = 320;
 unsigned char nasgul1Y         = 120;
 unsigned char previousLevel = 0;
@@ -425,7 +440,15 @@ int main(void)
             animFrame     = 0;
             animTimer     = 0;
             ring_power  = 200;
-            ringActive  = 0;
+            ringActive  = 0;      
+            orc1X         = 30;
+            orc1Y         = 80;
+            orc2X         = 280;
+            orc2Y         = 80;
+            orc3X         = 40;
+            orc3Y         = 200;
+            orc4X         = 280;
+            orc4Y         = 200;
 
             /* wyczysc rejestry kolizji */
             dummy = *((unsigned char*)0xD01E);
@@ -521,33 +544,55 @@ if (!ringActive)  //POTWORY ATAKUJA
     }
 
     SPRITE_MOVE(1, nasgul1X, nasgul1Y);
+/////////////////////////////////
+// Czekaj na konkretną linię rastra (np. 255 = dół ekranu)
+//while (PEEK(0xD012) != 255);
 
-    // --- animacja orców ---
-    orcAnimTimer++;
-if (orcAnimTimer >= ORC_ANIM_SPEED) {
-    orcAnimTimer = 0;
-    orcAnimFrame++;
-    if (orcAnimFrame >= 2) orcAnimFrame = 0;  // reset po klatce 2
-}
+if ((level_map==3) || (level_map==2) || (level_map==4)) 
+    {
+        
+        //chase player
+        
+         if(playerX > orc1X ) orc1X++; else orc1X--;
+         if(playerY > orc1Y ) orc1Y++; else orc1Y--;
+         
+         if(playerX > orc2X ) orc2X++; else orc2X--;
+         if(playerY > orc2Y ) orc2Y++; else orc2Y--;
+          if(playerX > orc3X ) orc3X++; else orc3X--;
+         if(playerY > orc3Y ) orc3Y++; else orc3Y--;
+
+          if(playerX > orc4X ) orc4X++; else orc4X--;
+         if(playerY > orc4Y ) orc4Y++; else orc4Y--;
+      
+        // --- animacja orcow ---
+        orcAnimTimer++;
+     if (orcAnimTimer >= ORC_ANIM_SPEED) 
+     {
+        orcAnimTimer = 0;
+        orcAnimFrame++;
+        if (orcAnimFrame >= 2) orcAnimFrame = 0;  // reset po klatce 2
+        
+      }
     
-   // wyświetl odpowiednią klatkę
-switch (orcAnimFrame) {
-    case 0:
-        SPRITE(4, spriteOrc_1, 130, 130, 13);
-        
-        
-        break;
-    case 1:
-        SPRITE(4, spriteOrc_2, 130, 130, 13);
-        
-        
-        break;
-    //case 2:
-        
+    // wyświetl odpowiednią klatkę
+    switch (orcAnimFrame) 
+    {
+        case 0:
+            SPRITE(4, spriteOrc_1, orc1X, orc1Y, 13);  
+         //   SPRITE(5, spriteOrc_1, orc2X, orc2Y, 13);  
+          //  SPRITE(6, spriteOrc_1, orc3X, orc3Y, 13); 
+         //   SPRITE(7, spriteOrc_1, orc4X, orc4Y, 13);  break;
+        case 1:
+            SPRITE(4, spriteOrc_2, orc1X, orc1Y, 13);  
+         //  SPRITE(5, spriteOrc_2, orc2X, orc2Y, 13);  
+           // SPRITE(6, spriteOrc_2, orc3X, orc3Y, 13); 
+            //SPRITE(7, spriteOrc_2, orc4X, orc4Y, 13);  break;
+            //case 2:     
         
       //  SPRITE(4, spriteOrc_3, 130, 130, 4);
       //  break;
-}
+    }
+   }
 
 }
 
